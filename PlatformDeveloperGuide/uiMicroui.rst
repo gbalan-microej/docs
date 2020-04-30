@@ -80,7 +80,7 @@ This thread is called ``UIPump``. It has two roles:
 Memory
 ------
 
-The thread is always running. The user has to count it to determine the number of concurrent threads the MicroEJ Core Engine can run (see Memory options in :ref:`workbenchLaunchOptions`).
+The thread is always running. The user has to count it to determine the number of concurrent threads the MicroEJ Core Engine can run (see Memory options in :ref:`application_options`).
 
 Exceptions
 ----------
@@ -185,7 +185,7 @@ Use
 The classpath variable named ``MICROUI-3.0`` is available.
 
 This library provides a set of options. Refer to the chapter
-:ref:`workbenchLaunchOptions` xxx which lists all available options.
+:ref:`application_options` which lists all available options.
 
 
 ..
