@@ -491,9 +491,9 @@ The initialization function is called when MicroEJ application is calling ``Micr
 
 The LCD *virtual* size is the size of the area where the drawings are visible. The LCD *physical* size is the required memory size where the area is located. Theoretical memory size is: ``lcd_width * lcd_height * bpp / 8``. On some devices the memory width (in pixels) is higher than virtual width. In this way, the graphics buffer memory size is: ``memory_width * memory_height * bpp / 8``.
 
-The display engine requires two binary semaphores to synchronize its internal state. The binary semaphores must be configured in a state such that the semaphore must first be *given* before it can be *taken*. Two distincts functions have to be implemented to *take* and *give* a binary semaphore.
+The display engine requires two binary semaphores to synchronize its internal states. The binary semaphores must be configured in a state such that the semaphore must first be *given* before it can be *taken*. Two distincts functions have to be implemented to *take* and *give* a binary semaphore.
 
-According the display buffer mode (see xxx), the ``flush`` has to be implemented. This function should be atomic and not performing the copy directly. Another OS task or a dedicated hardware must be configured to perform the buffer copy. 
+According the display buffer mode (see xxx), the ``flush`` function has to be implemented. This function should be atomic and not performing the copy directly. Another OS task or a dedicated hardware must be configured to perform the buffer copy. 
 
 Optional Low Level API
 ======================
@@ -529,9 +529,11 @@ Drawing Native
 
 As explained upper, MicroUI implementation provides a dedicated header file which lists all MicroUI Painter drawings native function. The implementation of these functions has to respect several rules to not corrupt the MicroUI execution (flickering, memory corruption, unknown behavior etc.). These rules are already respected in the CCO available in MicroEJ Central Repository. In addition, MicroUI allows to add some custom drawings. The implementation of MicroUI Painter native drawings should be used as model to implement the custom drawings.
 
-All native functions must have a MICROUI_GraphicsContext* as parameter (often first parameter). This identifies the destination target: the MicroUI ``GraphicsContext``. This target is retrieved in MicroEJ application calling the method ``gc.getSNIContext()``. This method returns a byte array which is directly mapped on the ``MICROUI_GraphicsContext`` structure in MicroUI native drawing function declaration.
+All native functions must have a ``MICROUI_GraphicsContext*`` as parameter (often first parameter). This identifies the destination target: the MicroUI ``GraphicsContext``. This target is retrieved in MicroEJ application calling the method ``gc.getSNIContext()``. This method returns a byte array which is directly mapped on the ``MICROUI_GraphicsContext`` structure in MicroUI native drawing function declaration.
  
 A graphics context holds a clip and the drawer is not allowed to perform a drawing outside this clip (otherwise the behavior is unknown). Note the bottom-right coordinates might be smaller than top-left (in x and/or y) when the clip width and/or height is null. The clip may be disabled (when the current drawing fits the clip); this allows to reduce runtime. See ``LLUI_DISPLAY_isClipEnabled()``.
+
+Graphical engine requires the synchronization between the drawing. To do that, it requires a call to ``LLUI_DISPLAY_requestDrawing`` at the beginning of native function implementation. This function takes as parameter the graphics context and the pointer on the native function itself. This pointer must be casted in a ``SNI_callback``. 
 
 .. note::
 
@@ -543,10 +545,10 @@ The native function implementation pattern is:
 
 .. code:: c
 
-   void _drawing_native_xxx(MICROUI_GraphicsContext* gc, ...)
+   void Java_com_mycompany_MyPainterClass_myDrawingNative(MICROUI_GraphicsContext* gc, ...)
    {
       // tell to graphical engine if drawing can be performed
-      if (LLUI_DISPLAY_requestDrawing(gc, (SNI_callback)&_drawing_native_xxx))
+      if (LLUI_DISPLAY_requestDrawing(gc, (SNI_callback)&Java_com_mycompany_MyPainterClass_myDrawingNative))
       {
          DRAWING_Status status;
 
@@ -562,6 +564,31 @@ The native function implementation pattern is:
       // else: refused drawing
    }
 
+xxx schema d'un appel natif avec recall auto (truc avec deux lignes verticales et fleches)
+
+Display Synchronization
+=======================
+
+Graphical engine defines some points in the rendering timeline. 
+#. The rendering: MicroEJ application is calling ``Painter`` drawing methods
+#. The LCD synchronization: MicroEJ application has called Display.flush() and the LLUI_DISPLAY driver is waiting for the LCD tearing interrupt
+#. The frame buffer updates starts (by switching back and frame buffers or by copying back buffer content in frame buffer, see xxx buffer mode).
+#. Back to rendering 
+
+xxx schemas copy / switch trois cercles renderging / wait flush / update frame buffer
+
+Waiting the LCD tearing signal ensures to not update the frame buffer too early. It forces to respect the LCD refreshing time. Otherwise the LCD visible data can be corrupted: flickering, glitches etc.
+
+The LCD tearing signal occurs at fixed frequency. This signal fixed the maximum framerate. Even for a drawing which take few milliseconds, the framework has to wait the tearing signal to continue. When a drawing time is higher than the period between two tearing signals, the framework has to wait the next tearing signal. The framerate is so divided by two.
+
+xxx chronogrammes dessin normal / court / long / tres long
+les deux mosdes: avec la copie avant ou apres (switch / copy)
+
+Some LCD does not provide the tearing signal. In this case the synchronization can not be done. The framerate is so cadenced on the drawing time itself and the maximum framerate can be very higher than the LCD refresh time.
+
+xxx schema direct mode : deux ronds
+
+xxx chronogramme dessin 20ms
 
 Antialiasing
 ============
@@ -591,20 +618,65 @@ The display module allows to target LCD which uses a pixel indirection table (LU
 
 When an application color is not available in the display driver table (LUT), the display driver can try to find the nearest color or return a default color. First solution is often quite difficult to write and can cost a lot of time at runtime. That's why the second solution is preferred. However, a consequence is that  he application has only to use a range of colors provided by the display driver.
 
-MicroUI and the display module uses blending when drawing some texts or anti-aliased shapes. For each pixel to draw, the display stack blends the current application foreground color with the targeted pixel current color or with the current application background color (when enabled). This blending *creates* some  intermediate colors which are managed by the display driver. Most of time the default color will be returned and so the rendering will be wrong. To prevent this use case, the display module offers a specific LLAPI ``LLDISPLAY_EXTRA_IMPL_prepareBlendingOfIndexedColors(void* foreground, void* background)``. This API is only used when a blending is required and when the background color is enabled. Display module calls the API just before the blending and gives as parameter the pointers on the both ARGB colors. The display driver should replace the ARGB colors by the LUT indexes. Then the display module will only use the indexes between the
+MicroUI and the display module uses blending when drawing some texts or anti-aliased shapes. For each pixel to draw, the display stack blends the current application foreground color with the targeted pixel current color or with the current application background color (when enabled). This blending *creates* some  intermediate colors which are managed by the display driver. Most of time the default color will be returned and so the rendering will be wrong. To prevent this use case, the display module offers a specific LLAPI ``LLUI_DISPLAY_IMPL_prepareBlendingOfIndexedColors(void* foreground, void* background)``. This API is only used when a blending is required and when the background color is enabled. Display module calls the API just before the blending and gives as parameter the pointers on the both ARGB colors. The display driver should replace the ARGB colors by the LUT indexes. Then the display module will only use the indexes between the
 both indexes. For instance, when the returned indexes are ``20`` and ``27``, the display stack will use the indexes ``20`` to ``27``, where all indexes between ``20`` and ``27`` target some intermediate colors between the both original ARGB colors. 
 
 This solution requires several conditions:
 
 -  Background color is enabled and it is an available color in the LUT.
-
 -  Application can only use foreground colors provided by the LUT. The platform designer should give to the application developer the available list of colors the LUT manages.
-
 -  The LUT must provide a set blending ranges the application can use. Each range can have its own size (different number of colors between two colors). Each range is independent. For instance if the foreground color ``RED`` (``0xFFFF0000``) can be blended with two background colors ``WHITE`` (``0xFFFFFFFF``) and ``BLACK`` (``0xFF000000``), two ranges must be provided. The both ranges have to contain the same index for the color ``RED``.
-
 -  Application can only use blending ranges provided by the LUT. Otherwise the display driver is not able to find the range and the default color will be used to perform the blending.
-
 -  Rendering of dynamic images (images decoded at runtime) may be wrong because the ARGB colors may be out of LUT range.
+
+Image Pixel Conversion
+======================
+
+Overview
+--------
+
+Display engine is built for a dedicated LCD pixel format (see xxx pixel structure xxx revoir nom ?). For this pixel format, the display engine must be able to perform some shape drawings with or without alpha blending and to draw images with or without alpha blending. In addition, it must be able to read all images formats.
+
+The MicroEJ application may not use all MicroUI shape drawings options and may not use all images formats. It is not possible to detect what the application is needed, so no optimizations can be performed at application compiletime. However, for a given application, the platform can be built with a reduced set of pixel support. 
+
+All pixel format manipulations (read, write, copy) are using dedicated functions. It is possible to remove some functions or to use generic functions. The advantage is to reduce the memory footprint. The inconvenient is that some features are removed (the application should not use them) or some features are slower (generic functions are slower than dedicated functions).
+
+Memory
+------
+
+There are five pixel *conversion* modes:
+
+-  draw an image without global alpha blending: copy a pixel from a format to the destination format (LCD format)
+-  draw an image with global alpha blending: copy a pixel with alpha blending from a format to the destination format (LCD format)
+-  draw a shape: draw a pixel in destination format
+-  load a ``ResourceImage`` with an output format: convert a pixel in ARGB8888 format to the output format
+-  read a pixel from an image (rotate, scale, flip): read any pixel formats 
+
+.. table:: Pixel Conversion
+
+   +------------------------------------------+-------------+-------------+-------------+-------------+
+   |                                          | Nb input    | Nb output   | Number of   | Function    |
+   |                                          | formats     | formats     | combinations| size (byte) |
+   +==========================================+=============+=============+=============+=============+
+   | Draw image without global alpha          |     22      |      1      |     22      |     xxx     |
+   +------------------------------------------+-------------+-------------+-------------+-------------+
+   | Draw image with global alpha             |     22      |      1      |     22      |     xxx     |
+   +------------------------------------------+-------------+-------------+-------------+-------------+
+   | Draw a shape                             |      2      |      1      |      2      |     xxx     |
+   +------------------------------------------+-------------+-------------+-------------+-------------+
+   | Load a  ``ResourceImage``                |      1      |      6      |      6      |     xxx     |
+   +------------------------------------------+-------------+-------------+-------------+-------------+
+   | Read an image                            |     22      |      1      |     22      |     xxx     |
+   +------------------------------------------+-------------+-------------+-------------+-------------+
+
+Linker File
+-----------
+
+All pixel functions are listed in a platform linker file. It is possible to edit this file to remove some features or to share some functions (using generic function).
+
+How to get the file:
+
+#. xxx
 
 
 .. _display_hard_accelerator:
