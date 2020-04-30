@@ -8,61 +8,54 @@ Display
 Principle
 =========
 
-The Display module contains the C part of the MicroUI implementation
-which manages graphical displays. This module is composed of two
-elements:
+The Display engine contains the C part of the MicroUI implementation which manages graphical displays. This module is composed of three elements:
 
--  the C part of MicroUI Display API (a built-in C archive)
+- the C part of MicroUI Display API (a built-in C archive)
+- an implementation of a low level API for the displays (LLUI_DISPLAY) that the BSP must provide (see :ref:`LLDISPLAY-API-SECTION`)
+- an implementation of a low level API for MicroUI drawings
 
--  an implementation of a low level API for the displays (LLDISPLAY)
-   that the BSP must provide (see :ref:`LLDISPLAY-API-SECTION`)
 
+Functional Description
+======================
+
+The Display engine (or graphical engine) implements the MicroUI graphics framework. This framework is constitued of several notions: the display characteristics (size, format, backlight, contrast etc.), the drawing state machine (render, flush, wait flush completed), the images cycle life, the font and drawings. The main part of graphical engine is provided by a built-in C archive. This library manages the drawing state machine mechanism, the images and fonts. The display characteristics and the drawings are managed by the LLUI_DISPLAY implementation.
+
+xxx schema avec llui display
+
+Graphical engine is designed to let the BSP use an optional graphics processor unit (GPU) or an optional third-party drawing library. Each drawing can be implemented independantly; no have to implement all MicroUI drawings. If no extra framework is available, the graphical engine performs all drawings. In this case the graphical engine low-level implementation the BSP has to perform is very simple (four functions). 
+
+MicroUI library also gives the possibility to perform some additional drawings which are not available as API in MicroUI library. Graphical engine gives a set of functions to synchronize the drawings between them, to get the destination (and sometimes source) characteristics, to call internal software drawings etc. 
+
+Front Panel (simulator display engine part) gives the same possibilities. Same constraints can be applied, same drawings can be overrided or added, same software drawing rendering is performed (down to the pixel).
 
 .. _section_display_modes:
 
 Display Configurations
-----------------------
+======================
 
-The Display modules provides a number of different configurations. The
-appropriate configuration should be selected depending on the
-capabilities of the screen and other related hardware, such as LCD
-controllers.
+The Display engine provides a number of different configurations. The appropriate configuration should be selected depending on the capabilities of the screen and other related hardware, such as LCD controllers.
 
 The modes can vary in three ways:
 
--  the buffer mode: double-buffer, simple buffer (also known as
-   "direct")
-
+-  the buffer mode: double-buffer, simple buffer (also known as *direct*)
 -  the memory layout of the pixels
-
 -  pixel format or depth
 
-The supplied configurations offer a limited range of combinations of the
-options.
+The supplied configurations offer a limited range of combinations of the options.
 
 Buffer Modes
-------------
+============
 
 Overview
-~~~~~~~~
+--------
 
-When using the double buffering technique, the memory into which the
-application draws (called graphics buffer or back buffer) is not the
-memory used by the screen to refresh it (called frame buffer or display
-buffer). When everything has been drawn consistently from the
-application point of view, the back buffer contents are synchronized
-with the display buffer. Double buffering avoids flickering and
-inconsistent rendering: it is well suited to high quality animations.
+When using the double buffering technique, the memory into which the application draws (called graphics buffer or back buffer) is not the memory used by the screen to refresh it (called frame buffer or display
+buffer). When everything has been drawn consistently from the application point of view, the back buffer contents are synchronized with the display buffer. Double buffering avoids flickering and inconsistent rendering: it is well suited to high quality animations.
 
-For more static display-based applications, and/or to save memory, an
-alternative configuration is to use only one buffer, shared by both the
-application and the screen.
+For more static display-based applications, and/or to save memory, an alternative configuration is to use only one buffer, shared by both the application and the screen.
 
-Displays addressed by one of the standard configurations are called
-*generic displays*. For these generic displays, there are three buffer
-modes: switch, copy and direct. The following flow chart provides a
-handy guide to selecting the appropriate buffer mode according to the
-hardware configuration.
+Displays addressed by one of the standard configurations are called *generic displays*. For these generic displays, there are three buffer modes: switch, copy and direct. The following flow chart provides a
+handy guide to selecting the appropriate buffer mode according to the hardware configuration.
 
 .. figure:: images/display_modes_nocustom.*
    :alt: Buffer Modes
@@ -72,39 +65,25 @@ hardware configuration.
    Buffer Modes
 
 Implementation
-~~~~~~~~~~~~~~
+--------------
 
-The display module (or stack) does not depend on type of buffer mode. At
-the end of a drawing, the display stack calls the LLAPI
-``LLDISPLAY_IMPL_flush`` to let the implementation to update the LCD
-data. This function should be atomic and the implementation has to
-return the new graphics buffer address (back buffer address). In
-``direct`` and ``copy`` modes, this address never changes and the
-implementation has always to return the back buffer address. In
-``switch`` mode, the implementation has to return the old LCD frame
-buffer address.
+The display engine does not depend on type of buffer mode. At the end of a drawing, the display engine calls the LLAPI ``LLUI_DISPLAY_IMPL_flush`` to let the implementation to update the LCD data. This function should be atomic and the implementation has to return the new graphics buffer address (back buffer address). In
+``direct`` and ``copy`` modes, this address never changes and the implementation has always to return the back buffer address. In ``switch`` mode, the implementation has to return the old LCD frame buffer address.
 
 The next sections describe the work to do for each mode.
 
 .. _switchBufferMode:
 
 Switch
-~~~~~~
+------
 
-The switch mode is a double-buffered mode where two buffers in RAM
-alternately play the role of the back buffer and the display buffer. The
-display source is alternatively changed from one buffer to the other.
+The switch mode is a double-buffered mode where two buffers in RAM alternately play the role of the back buffer and the display buffer. The display source is alternatively changed from one buffer to the other.
 
-Switching the source address may be done asynchronously. The synchronize
-function is called before starting the next set of draw operations, and
-must wait until the driver has switched to the new buffer.
+Switching the source address may be done asynchronously. The synchronize function is called before starting the next set of draw operations, and must wait until the driver has switched to the new buffer.
 
 Synchronization steps are described :ref:`below <switchModeSyncSteps>`.
 
 .. _switchModeSyncSteps :
-
-Switch Mode Synchronization Steps
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - | *Step 1:* Drawing
   | MicroUI is drawing in buffer 0 (back buffer) and the display is reading its contents from buffer 1 (display buffer).
@@ -130,7 +109,7 @@ Switch Mode Synchronization Steps
    Step 2 : Switch
 
 - | *Step 3:* Copy
-  | A copy from the buffer 0 (new display buffer) to the buffer 1 (new back buffer) must be done to keep the contents of the current drawing. The copy routine must wait until the display has finished the switch, and start asynchronously by comparison with the MicroUI drawing routine (see next step).
+  | A copy from the buffer 0 (new display buffer) to the buffer 1 (new back buffer) must be done to keep the contents of the current drawing. The copy routine must wait until the display has finished the switch, and start asynchronously by comparison with the MicroUI drawing routine (see next step). 
   | This copy routine can be done in a dedicated RTOS task or in an interrupt routine. The copy should start after the display \"hardware component\" has finished a full buffer read to avoid flickering.
   | Usually a tearing signal from the LCD at the end of the  read of the previous buffer (buffer 1) or at the beginning of the read of the new buffer (buffer 0) throws an interrupt. The interrupt routine starts the copy using a DMA.
   | If it is not possible to start an asynchronous copy, the copy must be performed in the MicroUI drawing routine, at the beginning of the next step.
@@ -163,19 +142,14 @@ Switch Mode Synchronization Steps
 .. _copyBufferMode:
 
 Copy
-~~~~
+----
 
-The copy mode is a double-buffered mode where the back buffer is in RAM
-and has a fixed address. To update the display, data is sent to the
-display buffer. This can be done either by a memory copy or by sending
+The copy mode is a double-buffered mode where the back buffer is in RAM and has a fixed address. To update the display, data is sent to the display buffer. This can be done either by a memory copy or by sending
 bytes using a bus, such as SPI or I2C.
 
 Synchronization steps are described :ref:`below <table_copyModeSyncSteps>`.
 
 .. _table_copyModeSyncSteps:
-
-Display Copy Mode
-^^^^^^^^^^^^^^^^^
 
 - | *Step 1:* Drawing 
   | MicroUI is drawing in the back buffer and the display is reading its content from the display buffer.
@@ -206,13 +180,10 @@ Display Copy Mode
 .. _directBufferMode:
 
 Direct
-~~~~~~
+------
 
-The direct mode is a single-buffered mode where the same memory area is
-used for the back buffer and the display buffer
-(:ref:`See illustration below <fig_directMode>`). Use of the direct mode is likely to
-result in "noisy" rendering and flickering, but saves one buffer in
-runtime memory.
+The direct mode is a single-buffered mode where the same memory area is used for the back buffer and the display buffer (:ref:`See illustration below <fig_directMode>`). Use of the direct mode is likely to
+result in "noisy" rendering and flickering, but saves one buffer in runtime memory.
 
 .. _fig_directMode:
 .. figure:: images/direct.*
@@ -225,26 +196,17 @@ runtime memory.
 .. _section_display_layout_byte:
 
 Byte Layout
------------
+===========
 
-This chapter concerns only LCD with a number of bits-per-pixel (BPP)
-smaller than 8. For this kind of LCD, a byte contains several pixels and
-the display module allows to customize how to organize the pixels in a
+This chapter concerns only LCD with a number of bits-per-pixel (BPP) smaller than 8. For this kind of LCD, a byte contains several pixels and the display module allows to customize how to organize the pixels in a
 byte.
 
 Two layouts are available:
 
--  line: The byte contains several consecutive pixels on same line. When
-   the end of line is reatched, a padding is added in order to start a
-   new line with a new byte.
+-  line: The byte contains several consecutive pixels on same line. When the end of line is reatched, a padding is added in order to start a new line with a new byte.
+-  column: The byte contains several consecutive pixels on same column. When the end of column is reatched, a padding is added in order to start a new column with a new byte.
 
--  column: The byte contains several consecutive pixels on same column.
-   When the end of column is reatched, a padding is added in order to
-   start a new column with a new byte.
-
-When installing the display module, a property ``byteLayout`` is
-required to specify the kind of pixels representation (see
-:ref:`section_display_installation`).
+When installing the display module, a property ``byteLayout`` is required to specify the kind of pixels representation (see :ref:`section_display_installation`).
 
 .. table:: Byte Layout: line
 
@@ -286,14 +248,10 @@ required to specify the kind of pixels representation (see
 .. _section_display_layout_memory:
 
 Memory Layout
--------------
+=============
 
-For the LCD with a number of bits-per-pixel (BPP) higher or equal to 8,
-the display module supports the line-by-line memory organization: pixels
-are laid out from left to right within a line, starting with the top
-line. For a display with 16 bits-per-pixel, the pixel at (0,0) is stored
-at memory address 0, the pixel at (1,0) is stored at address 2, the
-pixel at (2,0) is stored at address 4, and so on.
+For the LCD with a number of bits-per-pixel (BPP) higher or equal to 8, the display module supports the line-by-line memory organization: pixels are laid out from left to right within a line, starting with the top
+line. For a display with 16 bits-per-pixel, the pixel at (0,0) is stored at memory address 0, the pixel at (1,0) is stored at address 2, the pixel at (2,0) is stored at address 4, and so on.
 
 .. table:: Memory Layout for BPP >= 8
 
@@ -313,14 +271,7 @@ pixel at (2,0) is stored at address 4, and so on.
    |     | [7:0]     | [7:0]     | [7:0]     | [7:0]     | [7:0]     |
    +-----+-----------+-----------+-----------+-----------+-----------+
 
-For the LCD with a number of bits-per-pixel (BPP) lower than 8, the
-display module supports the both memory organizations: line by line
-(pixels are laid out from left to right within a line, starting with the
-top line) and column by column (pixels are laid out from top to bottom
-within a line, starting with the left line). These byte organizations
-concern until 8 consecutive pixels (see :ref:`section_display_layout_byte`). When installing the display
-module, a property ``memoryLayout`` is required to specify the kind of
-pixels representation (see :ref:`section_display_installation`).
+For the LCD with a number of bits-per-pixel (BPP) lower than 8, the display module supports the both memory organizations: line by line (pixels are laid out from left to right within a line, starting with the top line) and column by column (pixels are laid out from top to bottom within a line, starting with the left line). These byte organizations concern until 8 consecutive pixels (see :ref:`section_display_layout_byte`). When installing the display module, a property ``memoryLayout`` is required to specify the kind of pixels representation (see :ref:`section_display_installation`).
 
 .. table:: Memory Layout 'line' for BPP < 8 and byte layout 'line'
 
@@ -385,19 +336,11 @@ pixels representation (see :ref:`section_display_installation`).
 .. _display_pixel_structure:
 
 Pixel Structure
----------------
+===============
 
-The Display module provides pre-built display configurations with
-standard pixel memory layout. The layout of the bits within the pixel
-may be standard (see MicroUI GraphicsContext pixel formats) or
-driver-specific. When installing the display module, a property ``bpp``
-is required to specify the kind of pixel representation (see
-:ref:`section_display_installation`).
+The Display module provides pre-built display configurations with standard pixel memory layout. The layout of the bits within the pixel may be standard (see MicroUI GraphicsContext pixel formats) or driver-specific. When installing the display module, a property ``bpp`` is required to specify the kind of pixel representation (see :ref:`section_display_installation`).
 
-When the value is one among this list:
-``ARGB8888 | RGB888 | RGB565 | ARGB1555 | ARGB4444 | C4 | C2 | C1``, the
-display module considers the LCD pixels representation as standard.
-According to the chosen format, some color data can be lost or cropped.
+When the value is one among this list: ``ARGB8888 | RGB888 | RGB565 | ARGB1555 | ARGB4444 | C4 | C2 | C1``, the display module considers the LCD pixels representation as standard. According to the chosen format, some color data can be lost or cropped.
 
 -  ARGB8888: the pixel uses 32 bits-per-pixel (alpha[8], red[8],
    green[8] and blue[8]).
@@ -536,16 +479,88 @@ According to the chosen format, some color data can be lost or cropped.
           return 0xff000000 | (c * 0xffffff);
       }
 
-When the value is one among this list: ``1 | 2 | 4 | 8 | 16 | 24 | 32``,
-the display module considers the LCD pixel representation as generic but
-not standard. In this case, the driver must implement functions that
-convert MicroUI's standard 32 bits ARGB colors to LCD color
-representation (see :ref:`LLDISPLAY-API-SECTION`). This mode is
-often used when the pixel representation is not ``ARGB`` or ``RGB`` but
-``BGRA`` or ``BGR`` instead. This mode can also be used when the number
-of bits for a color component (alpha, red, green or blue) is not
-standard or when the value does not represent a color but an index in an
-LUT.
+When the value is one among this list: ``1 | 2 | 4 | 8 | 16 | 24 | 32``, the display module considers the LCD pixel representation as generic but not standard. In this case, the driver must implement functions that
+convert MicroUI's standard 32 bits ARGB colors to LCD color representation (see :ref:`LLDISPLAY-API-SECTION`). This mode is often used when the pixel representation is not ``ARGB`` or ``RGB`` but ``BGRA`` or ``BGR`` instead. This mode can also be used when the number of bits for a color component (alpha, red, green or blue) is not standard or when the value does not represent a color but an index in an LUT.
+
+Required Low Level API
+======================
+
+Some four low-level APIs are required to connect the display engine on the LCD driver. The functions are listed in ``LLUI_DISPLAY_impl.h``. 
+
+The initialization function is called when MicroEJ application is calling ``MicroUI.start()``. Before this call, the LCD is useless and no need to be initialized. This function consists to initialize the LCD driver and to fill the given structure ``LLUI_DISPLAY_SInitData``.  This structure has to contain pointers on two binary semaphores (see after), the back buffer address (see xxx buffer mode), the LCD *virtual* size in pixels and optionaly the LCD *physical* size in pixels.
+
+The LCD *virtual* size is the size of the area where the drawings are visible. The LCD *physical* size is the required memory size where the area is located. Theoretical memory size is: ``lcd_width * lcd_height * bpp / 8``. On some devices the memory width (in pixels) is higher than virtual width. In this way, the graphics buffer memory size is: ``memory_width * memory_height * bpp / 8``.
+
+The display engine requires two binary semaphores to synchronize its internal state. The binary semaphores must be configured in a state such that the semaphore must first be *given* before it can be *taken*. Two distincts functions have to be implemented to *take* and *give* a binary semaphore.
+
+According the display buffer mode (see xxx), the ``flush`` has to be implemented. This function should be atomic and not performing the copy directly. Another OS task or a dedicated hardware must be configured to perform the buffer copy. 
+
+Optional Low Level API
+======================
+
+Several low-level API are available in ``LLUI_DISPLAY_impl.h``. They are already implemented as *weak* functions in the display engine and return no error. These optional features concern the LCD backlight and constrast, LCD characteristics (is colored display, double buffer), colors conversions (see xxx pixel structure and xxx lut) and images extra features (see xxx images).
+
+Painter Low Level API
+=====================
+
+All MicroUI drawings (available in ``Painter`` class) are calling a native function. The MicroUI native drawing functions are listed in ``LLUI_PAINTER_impl.h``. The implementation must take care about a lot of constraints: synchronization between drawings, graphical engine notification, MicroUI ``GraphicsContext`` clip and colors, flush dirty area etc. The principle of implementing a MicroUI drawing function is described in the chapter xxx. 
+
+An implementation of this file is already available on MicroEJ Central Repository. This implementation respects the synchronization between drawings, the graphical engine notification, reduce (when possible) the MicroUI ``GraphicsContext`` clip constraints and update (when possible) the flush dirty area. 
+
+This implementation does not perform the drawings. It only calls the equivalent of drawing available in ``ui_drawing.h``. This allows to simplify how to use a GPU (or a third-party library) to perform a drawing: the ``ui_drawing.h`` implementation has just to take in consideration the  MicroUI ``GraphicsContext`` clip and colors and flush dirty area. Synchronization with the graphical engine is already performed.
+
+In addition with the implementation of ``LLUI_PAINTER_impl.h``, an implementation of ``ui_drawing.h`` is already available in graphical engine (in *weak* mode). This allows to implement only the functions the GPU is able to perform. For a given drawing, the weak function implementation is calling the equivalent of drawing available in ``ui_drawing_soft.h``. This file lists all drawing functions implemented by the graphical engine.
+
+The graphical engine implementation of ``ui_drawing_soft.h`` is performing the drawings in software. However some drawings can call another ``ui_drawing.h`` function. For instance ``UI_DRAWING_SOFT_drawHorizontalLine`` is calling ``UI_DRAWING_fillRectangle`` in order to use a GPU if available. If not available, the weak implementation of ``UI_DRAWING_fillRectangle`` is calling ``UI_DRAWING_SOFT_fillRectangle`` and so on.
+
+The BSP implementation is also allowed to call ``ui_drawing_soft.h`` algorithms, one or several times per function to implement. For instance, a GPU may be able to draw an image whose format is RGB565. But if the image format is ARGB1555, BSP implementation can call ``UI_DRAWING_SOFT_drawImage`` function.
+
+xxx add a schema des calls possibles / gpu / soft algo
+
+Graphical Engine API
+====================
+
+Graphical engine provides a set of functions to interact with the C archive. Thes functions allows to retrieve some drawing characteristics, synchronize drawings between them, notify the end of flush and drawings etc. 
+
+The functions are available in ``LLUI_DISPLAY.h``. 
+
+Drawing Native
+==============
+
+As explained upper, MicroUI implementation provides a dedicated header file which lists all MicroUI Painter drawings native function. The implementation of these functions has to respect several rules to not corrupt the MicroUI execution (flickering, memory corruption, unknown behavior etc.). These rules are already respected in the CCO available in MicroEJ Central Repository. In addition, MicroUI allows to add some custom drawings. The implementation of MicroUI Painter native drawings should be used as model to implement the custom drawings.
+
+All native functions must have a MICROUI_GraphicsContext* as parameter (often first parameter). This identifies the destination target: the MicroUI ``GraphicsContext``. This target is retrieved in MicroEJ application calling the method ``gc.getSNIContext()``. This method returns a byte array which is directly mapped on the ``MICROUI_GraphicsContext`` structure in MicroUI native drawing function declaration.
+ 
+A graphics context holds a clip and the drawer is not allowed to perform a drawing outside this clip (otherwise the behavior is unknown). Note the bottom-right coordinates might be smaller than top-left (in x and/or y) when the clip width and/or height is null. The clip may be disabled (when the current drawing fits the clip); this allows to reduce runtime. See ``LLUI_DISPLAY_isClipEnabled()``.
+
+.. note::
+
+   Several clip functions are available in LLUI_DISPLAY.h to check if a drawing fits the clip.
+
+The drawing function must update the next ``Display.flush()`` area (dirty area). If not performed, the next call to ``Display.flush()`` will not call ``LLUI_DISPLAY_IMPL_flush()`` function.
+ 
+The native function implementation pattern is:
+
+.. code:: c
+
+   void _drawing_native_xxx(MICROUI_GraphicsContext* gc, ...)
+   {
+      // tell to graphical engine if drawing can be performed
+      if (LLUI_DISPLAY_requestDrawing(gc, (SNI_callback)&_drawing_native_xxx))
+      {
+         DRAWING_Status status;
+
+         // perform the drawings (respecting clip if not disabled)
+         [...]
+
+         // update new flush dirty area
+         LLUI_DISPLAY_setDrawingLimits(gc, ...);
+
+         // set drawing status
+         LLUI_DISPLAY_setDrawingStatus(DRAWING_DONE); // or DRAWING_RUNNING;
+      }
+      // else: refused drawing
+   }
 
 
 Antialiasing
@@ -554,22 +569,15 @@ Antialiasing
 Fonts
 -----
 
-The antialiasing mode for the fonts concerns only the fonts with more
-than 1 bit per pixel (see :ref:`section_fontgen`).
+The antialiasing mode for the fonts concerns only the fonts with more than 1 bit per pixel (see :ref:`section_fontgen`).
 
 Background Color
 ----------------
 
-For each pixel to draw, the antialiasing process blends the foreground
-color with a background color. This background color is static or
-dynamic:
+For each pixel to draw, the antialiasing process blends the foreground color with a background color. This background color is static or dynamic:
 
--  static: The background color is fixed by the MicroEJ Application
-   (``GraphicsContext.setBackgroundColor()``).
-
--  dynamic: The background color is the original color of the
-   destination pixel (a "read pixel" operation is performed for each
-   pixel).
+-  static: The background color is fixed by the MicroEJ Application  (``GraphicsContext.setBackgroundColor()``).
+-  dynamic: The background color is the original color of the  destination pixel (a "read pixel" operation is performed for each pixel).
 
 Note that the dynamic mode is slower than the static mode.
 
@@ -579,69 +587,29 @@ Note that the dynamic mode is slower than the static mode.
 LUT
 ===
 
-The display module allows to target LCD which uses a pixel indirection
-table (LUT). This kind of LCD are considered as generic but not standard
-(see :ref:`display_pixel_structure`). By consequence, the driver
-must implement functions that convert MicroUI's standard 32 bits ARGB
-colors (see :ref:`LLDISPLAY-API-SECTION`) to LCD color
-representation. For each application ARGB8888 color, the display driver
-has to find the corresponding color in the table. The display module
-will store the index of the color in the table instead of using the
-color itself.
+The display module allows to target LCD which uses a pixel indirection table (LUT). This kind of LCD are considered as generic but not standard (see :ref:`display_pixel_structure`). By consequence, the driver must implement functions that convert MicroUI's standard 32 bits ARGB colors (see :ref:`LLDISPLAY-API-SECTION`) to LCD color representation. For each application ARGB8888 color, the display driver has to find the corresponding color in the table. The display module will store the index of the color in the table instead of using the color itself.
 
-When an application color is not available in the display driver table
-(LUT), the display driver can try to find the nearest color or return a
-default color. First solution is often quite difficult to write and can
-cost a lot of time at runtime. That's why the second solution is
-preferred. However, a consequence is that the application has only to
-use a range of colors provided by the display driver.
+When an application color is not available in the display driver table (LUT), the display driver can try to find the nearest color or return a default color. First solution is often quite difficult to write and can cost a lot of time at runtime. That's why the second solution is preferred. However, a consequence is that  he application has only to use a range of colors provided by the display driver.
 
-MicroUI and the display module uses blending when drawing some texts or
-anti-aliased shapes. For each pixel to draw, the display stack blends
-the current application foreground color with the targeted pixel current
-color or with the current application background color (when enabled).
-This blending *creates* some intermediate colors which are managed by
-the display driver. Most of time the default color will be returned and
-so the rendering will be wrong. To prevent this use case, the display
-module offers a specific LLAPI
-``LLDISPLAY_EXTRA_IMPL_prepareBlendingOfIndexedColors(void* foreground, void* background)``.
-This API is only used when a blending is required and when the
-background color is enabled. Display module calls the API just before
-the blending and gives as parameter the pointers on the both ARGB
-colors. The display driver should replace the ARGB colors by the LUT
-indexes. Then the display module will only use the indexes between the
-both indexes. For instance, when the returned indexes are ``20`` and
-``27``, the display stack will use the indexes ``20`` to ``27``, where
-all indexes between ``20`` and ``27`` target some intermediate colors
-between the both original ARGB colors.
+MicroUI and the display module uses blending when drawing some texts or anti-aliased shapes. For each pixel to draw, the display stack blends the current application foreground color with the targeted pixel current color or with the current application background color (when enabled). This blending *creates* some  intermediate colors which are managed by the display driver. Most of time the default color will be returned and so the rendering will be wrong. To prevent this use case, the display module offers a specific LLAPI ``LLDISPLAY_EXTRA_IMPL_prepareBlendingOfIndexedColors(void* foreground, void* background)``. This API is only used when a blending is required and when the background color is enabled. Display module calls the API just before the blending and gives as parameter the pointers on the both ARGB colors. The display driver should replace the ARGB colors by the LUT indexes. Then the display module will only use the indexes between the
+both indexes. For instance, when the returned indexes are ``20`` and ``27``, the display stack will use the indexes ``20`` to ``27``, where all indexes between ``20`` and ``27`` target some intermediate colors between the both original ARGB colors. 
 
 This solution requires several conditions:
 
 -  Background color is enabled and it is an available color in the LUT.
 
--  Application can only use foreground colors provided by the LUT. The
-   platform designer should give to the application developer the
-   available list of colors the LUT manages.
+-  Application can only use foreground colors provided by the LUT. The platform designer should give to the application developer the available list of colors the LUT manages.
 
--  The LUT must provide a set blending ranges the application can use.
-   Each range can have its own size (different number of colors between
-   two colors). Each range is independent. For instance if the
-   foreground color ``RED`` (``0xFFFF0000``) can be blended with two
-   background colors ``WHITE`` (``0xFFFFFFFF``) and ``BLACK``
-   (``0xFF000000``), two ranges must be provided. The both ranges have
-   to contain the same index for the color ``RED``.
+-  The LUT must provide a set blending ranges the application can use. Each range can have its own size (different number of colors between two colors). Each range is independent. For instance if the foreground color ``RED`` (``0xFFFF0000``) can be blended with two background colors ``WHITE`` (``0xFFFFFFFF``) and ``BLACK`` (``0xFF000000``), two ranges must be provided. The both ranges have to contain the same index for the color ``RED``.
 
--  Application can only use blending ranges provided by the LUT.
-   Otherwise the display driver is not able to find the range and the
-   default color will be used to perform the blending.
+-  Application can only use blending ranges provided by the LUT. Otherwise the display driver is not able to find the range and the default color will be used to perform the blending.
 
--  Rendering of dynamic images (images decoded at runtime) may be wrong
-   because the ARGB colors may be out of LUT range.
+-  Rendering of dynamic images (images decoded at runtime) may be wrong because the ARGB colors may be out of LUT range.
 
 
 .. _display_hard_accelerator:
 
-Hardware Accelerator
+Hardware Accelerator XXX to remove
 ====================
 
 Overview

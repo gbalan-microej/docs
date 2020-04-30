@@ -8,70 +8,32 @@ Static Initialization
 Principle
 =========
 
-MicroUI requires a configuration step (also called extension step) to
-customize itself before MicroEJ Application startup (see
-:ref:`section_architecture`). This configuration step uses an XML
-file. In order to save both runtime execution time and flash memory, the
-file is processed by the Static MicroUI Initializer tool, avoiding the
-need to process the XML configuration file at runtime. The tool
-generates appropriate initialized objects directly within the MicroUI
-library, as well as Java and C constants files for sharing MicroUI event
-generator IDs.
+The MicroUI implementation for MicroEJ requires a configuration step (also called extension step) to customize itself before MicroEJ application startup (see :ref:`section_architecture`). This configuration step uses an XML file. In order to save both runtime execution time and flash memory, the file is processed by the Static MicroUI Initializer tool, avoiding the need to process the XML configuration file at runtime. The tool generates appropriate initialized objects directly within the MicroUI library, as well as Java and C constants files for sharing MicroUI event generator IDs.
 
 This XML file (also called the initialization file) defines:
 
--  The MicroUI event generators that will exist in the application in
-   relation to low level drivers that provide data to these event
-   generators (see :ref:`section_input`).
+-  The MicroUI event generators that will exist in the application in relation to low level drivers that provide data to these event generators (see :ref:`section_input`).
 
--  Whether the application has a display; and if so, it provides its
-   logical name.
+-  Whether the application has a display; and if so, it provides its logical name.
 
 -  Which fonts will be provided to the application.
-
 
 Functional Description
 ======================
 
-The Static MicroUI Initializer tool takes as entry point the
-initialization file which describes the MicroUI library extension. This
-tool is automatically launched during the MicroUI module installation
-(see :ref:`section_microui_installation` ).
+The Static MicroUI Initializer tool takes as entry point the initialization file which describes the MicroUI library extension. This tool is automatically launched during the MicroEJ platform build (see :ref:`section_microui_installation` ).
 
-The Static MicroUI Initializer tool is able to out until three files:
+The Static MicroUI Initializer tool is able to out until two files:
 
--  A Java library which extends MicroUI library. This library is
-   automatically added to the MicroEJ Application classpath when MicroUI
-   library is set as a classpath variable. This library is used at
-   MicroUI startup to create all instances of I/O devices (``Display``,
-   ``EventGenerator`` etc.) and contains the fonts described into the
-   configuration file (these fonts are also called "system fonts").
+-  A Java library which extends MicroUI library. This library is automatically added to the MicroEJ Application classpath when MicroUI library is set as a classpath variable. This library is used at MicroUI startup to create all instances of I/O devices (``Display``, ``EventGenerator`` etc.) and contains the fonts described into the configuration file (these fonts are also called "system fonts").
 
-   This MicroUI extension library is always generated and MicroUI
-   library cannot run without this extension.
+   This MicroUI extension library is always generated and MicroUI library cannot run without this extension.
 
 -  A C header file (\*.h) file. This H file contains some IDs which are
    used to make a link between an input device (buttons, touch) and its
    MicroUI event generator (see :ref:`section_input`).
 
-   This file is useless if the BSP does not provide any input device and
-   the Static MicroUI Initializer tool is able to not generate this
-   file. Otherwise the MicroUI configuration file has to specify where
-   put this file, typically in a BSP ``include`` directory.
-
--  A Java interface file. This Java file contains the same IDs which are
-   used to make a link between an input device (buttons, touch) and its
-   MicroUI event generator (see :ref:`section_input`).
-
-   This Java file is used to configure the Simulator with the same
-   characteristics as the BSP.
-
-   This file is useless if the BSP does not provide any input device and
-   the Static MicroUI Initializer tool is able to not generate this
-   file. Otherwise the MicroUI configuration file has to specify where
-   put this file, typically in the Simulator project (also called front
-   panel project, see :ref:`section_simulation`).
-
+xxx remove FP
 .. figure:: images/static_init_process.*
    :alt: MicroUI Process
    :width: 70.0%
@@ -80,8 +42,8 @@ The Static MicroUI Initializer tool is able to out until three files:
    MicroUI Process
 
 
-Root Element
-============
+XML Root Element
+================
 
 The initialization file root element is ``<microui>`` and contains
 component-specific elements.
@@ -93,8 +55,8 @@ component-specific elements.
    </microui>
 
 
-Display Element
-===============
+XML Display Element
+===================
 
 The display component augments the initialization file with:
 
@@ -116,8 +78,8 @@ The display component augments the initialization file with:
    </fonts>
 
 
-Event Generators Element
-========================
+XML Event Generators Element
+============================
 
 The event generators component augments the initialization file with:
 
@@ -158,8 +120,8 @@ The event generators component augments the initialization file with:
    </array>
 
 
-Example
-=======
+XML File Example
+================
 
 This common MicroUI initialization file initializes MicroUI with:
 
@@ -174,7 +136,7 @@ This common MicroUI initialization file initializes MicroUI with:
 
 -  a ``Pointer`` event generator which targets a touch panel
 
--  a ``DisplayFont`` whose path is relative to this file
+-  a ``Font`` whose path is relative to this file
 
 ::
 
@@ -216,7 +178,7 @@ Use
 ===
 
 The Static MicroUI Initializer tool is automatically launched during the
-MicroUI module installation.
+MicroEJ platform build.
 
 ..
    | Copyright 2008-2020, MicroEJ Corp. Content in this space is free 

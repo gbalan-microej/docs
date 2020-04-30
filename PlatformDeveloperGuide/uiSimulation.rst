@@ -30,6 +30,15 @@ interacts with the user's computer in two ways:
 
 -  input: buttons, joystick, touch, haptic sensors
 
+xxx vieux comments sur les inputs en overview general
+The user must provide a set of
+listeners that connects the input widgets to event generators. The user
+may choose to simulate events that will ultimately come from a
+special-purpose input device using one of the standard input widgets;
+the listener will do the necessary translation. The user must also
+supply, in Java, a display extension that adapts the supplied display
+widget to the specifics of the hardware being simulated.
+
 
 Functional Description
 ======================
