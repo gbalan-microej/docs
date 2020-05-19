@@ -4,6 +4,7 @@
 Static Initialization
 =====================
 
+XXX remove prirority from display
 
 Principle
 =========
