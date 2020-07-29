@@ -1,12 +1,13 @@
-Simulation
-==========
+.. _tutorials:
+
+Tutorials
+=========
 
 .. toctree::
+   :maxdepth: 1
 
-   simulator
-   mock
-   spmock
-   blemock
+   tutorialCreateCustomPlatform
+   tutorialCreateFirmwareFromScratch
 
 ..
    | Copyright 2008-2020, MicroEJ Corp. Content in this space is free 
@@ -14,3 +15,4 @@ Simulation
    is subject to MicroEJ Corp prior approval.
    | MicroEJ is a trademark of MicroEJ Corp. All other trademarks and 
    copyrights are the property of their respective owners.
+
