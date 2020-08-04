@@ -17,7 +17,7 @@ Functional Description
 
 The LED engine implements the MicroUI ``Leds`` framework. ``LLUI_LED`` specifies the low level API that receive orders from the Java world.
 
-The low level API are the same for the LED which is connected to a ``GPIO`` (``0`` or ``1``) or via a ``PWM``. The BSP has the responsibility of interpreting the MicroEJ Application parameter ``intensity``.
+The low level API are the same for the LED which is connected to a ``GPIO`` (``0`` or ``1``), to a ``PWM``, to a bus (``I2C``, ``SPI``) etc. The BSP has the responsibility of interpreting the MicroEJ Application parameter ``intensity``.
 
 Typically, when the LED is connected to a ``GPIO``, the ``intensity`` "0" means "OFF," and all others values "ON." When the LED is connected via a ``PWM``, the ``intensity`` "0" means "OFF," and all others values must configure the ``PWM`` signal.
 
@@ -30,14 +30,18 @@ The LED engine provides low level APIs that allow the BSP to manage the LEDs. Th
 
 The LLAPI to implement are listed in the header file ``LLUI_LEDS_impl.h``. First, in the initialization function, the BSP must return the available number of LEDs the board provides. The others functions are used to turn the LEDs on and off.
 
-When there is no LED on the board, a *stub* implementation of C library is available. This C library must be linked by the third-party C IDE when the MicroUI module is installed in the MicroEJ Platform.
+.. figure:: images/ui_llapi_led.*
+   :alt: MicroUI LED Low-Level
+   :width: 200px
+
+When there is no LED on the board, a *stub* implementation of C library is available. This C library must be linked by the third-party C IDE when the MicroUI module is installed in the MicroEJ Platform. This stub library does not provide any low-level API files.
 
 Dependencies
 ============
 
 -  MicroUI module (see :ref:`section_microui`)
 
--  ``LLLEDS_impl.h`` implementation if standard implementation is chosen
+-  ``LLUI_LED_impl.h`` implementation if standard implementation is chosen
    (see :ref:`section_leds_implementation` and
    :ref:`LLLEDS-API-SECTION`).
 

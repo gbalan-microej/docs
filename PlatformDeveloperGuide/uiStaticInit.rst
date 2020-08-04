@@ -14,10 +14,10 @@ The MicroUI implementation for MicroEJ requires a configuration step (also calle
 This XML file (also called the initialization file) defines:
 
 -  The MicroUI event generators that will exist in the application in relation to low level drivers that provide data to these event generators (see :ref:`section_input`).
-
 -  Whether the application has a display; and if so, it provides its logical name.
-
 -  Which fonts will be provided to the application.
+
+The next chapters describe succinctly the XML file. For more information about grammar, please consult appendix :ref:`muiStaticInit`.
 
 Functional Description
 ======================
@@ -26,22 +26,22 @@ The Static MicroUI Initializer tool takes as entry point the initialization file
 
 The Static MicroUI Initializer tool is able to out until two files:
 
--  A Java library which extends MicroUI library. This library is automatically added to the MicroEJ Application classpath when MicroUI library is set as a classpath variable. This library is used at MicroUI startup to create all instances of I/O devices (``Display``, ``EventGenerator`` etc.) and contains the fonts described into the configuration file (these fonts are also called "system fonts").
+-  A Java library which extends MicroUI library. This library is automatically added to the MicroEJ Application classpath when MicroUI API library is fetched. This library is used at MicroUI startup to create all instances of I/O devices (``Display``, ``EventGenerator`` etc.) and contains the fonts described into the configuration file (these fonts are also called "system fonts").
 
-   This MicroUI extension library is always generated and MicroUI library cannot run without this extension.
+.. warning:: This MicroUI extension library is always generated and MicroUI library cannot run without this extension.
 
--  A C header file (\*.h) file. This H file contains some IDs which are
+-  A C header file (``*.h``) file. This H file contains some IDs which are
    used to make a link between an input device (buttons, touch) and its
    MicroUI event generator (see :ref:`section_input`).
 
-xxx remove FP
+.. note:: The front panel project does not need a configuration file (like C header file for embedded platform).
+
 .. figure:: images/static_init_process.*
    :alt: MicroUI Process
    :width: 70.0%
    :align: center
 
    MicroUI Process
-
 
 XML Root Element
 ================
@@ -64,7 +64,9 @@ The display component augments the initialization file with:
 -  The configuration of the display.
 
 -  Fonts that are implicitly embedded within the application (also
-   called system fonts). Applications can also embed their own fonts.
+   called system fonts). Applications can also embed their own fonts. 
+   
+.. note:: The system fonts are optional, in this case application has to provide some fonts to be able to draw characters.
 
 ::
 
@@ -85,9 +87,9 @@ XML Event Generators Element
 The event generators component augments the initialization file with:
 
 -  the configuration of the predefined MicroUI ``Event Generator``:
-   ``Command``, ``Buttons``, ``States``, ``Pointer``, ``Touch``
+   ``Command``, ``Buttons``, ``States``, ``Pointer``, ``Touch``.
 
--  the configuration of the generic MicroUI ``Event Generator``
+-  the configuration of the generic MicroUI ``Event Generator``.
 
 ::
 

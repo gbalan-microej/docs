@@ -5,11 +5,7 @@ The User Interface Extension features one of the fastest graphical engines, asso
 
 The diagram below shows a simplified view of the components involved in the provisioning of User Interface Extension.
 
-xxx comme network
-mej app <-> mui <-> display/input/led <-> drivers <-> hardware
-                <-> front panel <-> simulator
-
-.. figure:: images/java-c-ui-interface2.*
+.. figure:: images/java-c-ui-interface.*
    :alt: Overview
    :width: 70.0%
    :align: center   
@@ -24,12 +20,10 @@ Graphical engine manages fonts and images. The fonts and images have to be pre-p
 
 .. figure:: images/ui_overview2.*
    :alt: The User Interface Extension Components along with a Platform
-   :width: 70.0%
+   :width: 50.0%
    :align: center
 
    The User Interface Extension Components along with a Platform
-
-
 
 ..
    | Copyright 2008-2020, MicroEJ Corp. Content in this space is free 

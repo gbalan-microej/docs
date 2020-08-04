@@ -30,7 +30,7 @@ Each MicroUI ``Event Generator`` represents one side of a pair of collaborative 
 
 .. figure:: images/drivers-microui-comms.*
    :alt: Drivers and MicroUI Event Generators Communication
-   :width: 70.0%
+   :width: 40.0%
    :align: center
 
    Drivers and MicroUI Event Generators Communication
@@ -41,6 +41,7 @@ The MicroUI thread ``UIPump`` waits for data to be published by drivers into the
 
 .. figure:: images/microui-events.png
    :alt: MicroUI Events Framework
+   :width: 70.0%
    :align: center
 
    MicroUI Events Framework
@@ -62,7 +63,7 @@ decoupling has two major benefits:
 Static Initialization
 =====================
 
-The event generators available on MicroEJ application startup (after the call to ``MicroUI.start()``) are the event generators listed in the MicroUI description file (XML file). This file is a part of the MicroUI Static Initialization step (xxx ref). 
+The event generators available on MicroEJ application startup (after the call to ``MicroUI.start()``) are the event generators listed in the MicroUI description file (XML file). This file is a part of the MicroUI Static Initialization step (:ref:`section_static_init`). 
 
 The order of event generators defines the unique identifier for each event generator. These identifiers are generated in a header file called ``microui_constants.h``. The input driver (or its listener) has to use these identifiers to target a specific event generator.
 
@@ -88,7 +89,7 @@ On the application side, a subclass must be implemented by clients who want to d
 
 -  ``eventsReceived``: The event generator received an event made of several ``int``\ s.
 
-The event generator is responsible for converting incoming data into a MicroUI event and sending the event to its listener. It should be defined during MicroUI Static Initialization step (in the XML file, see XXX ref). This allows to MicroUI implementation to instanciate the event generator on startup. 
+The event generator is responsible for converting incoming data into a MicroUI event and sending the event to its listener. It should be defined during MicroUI Static Initialization step (in the XML file, see :ref:`section_static_init`). This allows to MicroUI implementation to instanciate the event generator on startup. 
 
 If the event generator is not available in the application classpath, a warning is thrown (with a stack trace) and the application continues. In this case, all events sent by BSP to this event generator are ignored because no event generator is able to decode them.
 
@@ -101,9 +102,13 @@ drivers.
 The LLAPI to implement are listed in the header file ``LLUI_INPUT_impl.h``. It allows events to be sent to the MicroUI implementation. The input drivers are allowed to add events directly using the event generator's
 unique ID (see :ref:`section_static_init`). The drivers are fully dependent on the MicroEJ framework (a driver or a driver listener cannot be developed without MicroEJ because it uses the header file generated during the MicroUI initialization step).
 
-To send an event to the MicroEJ application, the driver (or its listener) has to call one the function listed in ``LLUI_INPUT.h``. These functions take as parameter the MicroUI EventGenerator to target thanks its unique ID and data depending on the event type itself.
+To send an event to the MicroEJ application, the driver (or its listener) has to call one the event engine function, listed in ``LLUI_INPUT.h``. These functions take as parameter the MicroUI EventGenerator to target thanks its unique ID and data depending on the event type itself. To run correctly, the event engine requires an implementation of functions listed in ``LLUI_INPUT_impl.h``. When an event is added, event engine notifies MicroUI library.
 
-When there is no input device on the board, a *stub* implementation of C library is available. This C library must be linked by the third-party C IDE when the MicroUI module is installed in the MicroEJ Platform.
+.. figure:: images/ui_llapi_input2.*
+   :alt: MicroUI Input Low-Level
+   :width: 500px
+
+When there is no input device on the board, a *stub* implementation of C library is available. This C library must be linked by the third-party C IDE when the MicroUI module is installed in the MicroEJ Platform. This stub library does not provide any low-level API files.
 
 .. _javaEventGenerators:
 
@@ -113,7 +118,7 @@ Dependencies
 
 -  MicroUI module (see :ref:`section_microui`)
 
--  Static MicroUI initialization step (see `section_static_init`). This step generates a header file which contains some unique event generator IDs. These IDs must be used in the BSP to make the link between the input devices drivers and the MicroUI ``Event Generator``\ s.
+-  Static MicroUI initialization step (see :ref:`section_static_init` ). This step generates a header file which contains some unique event generator IDs. These IDs must be used in the BSP to make the link between the input devices drivers and the MicroUI ``Event Generator``\ s.
 
 -  ``LLINPUT_impl.h`` implementation (see :ref:`LLINPUT-API-SECTION`).
 
@@ -123,12 +128,12 @@ Dependencies
 Installation
 ============
 
-Inputs is a sub-part of the MicroUI library. When the MicroUI module is installed, the Inputs module must be installed in order to be able to connect physical input devices with MicroEJ Platform. If not installed, the *stub* module will be used. In the platform configuration file, check :guilabel:`UI` > :guilabel:`Inputs` to install Inputs.
+Inputs is a sub-part of the MicroUI library. When the MicroUI module is installed, the Inputs module must be installed in order to be able to connect physical input devices with MicroEJ Platform. If not installed, the *stub* module will be used. In the platform configuration file, check :guilabel:`UI` > :guilabel:`Inputs` to install Inputs. 
 
 Use
 ===
 
-The MicroUI Input APIs are available in the class ``ej.microui.EventGenerator``.
+The MicroUI Input APIs are available in the classes of packages ``ej.microui.event`` and ``ej.microui.event.generator``.
 
 ..
    | Copyright 2008-2020, MicroEJ Corp. Content in this space is free 

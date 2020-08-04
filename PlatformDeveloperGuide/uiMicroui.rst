@@ -26,14 +26,6 @@ At MicroEJ application startup all MicroUI objects relative to the I/O devices a
 
 MicroUI is not a standalone library. It requires a configuration step and several extensions to drive I/O devices (display, inputs, LEDs).
 
-xxx ajouter "h files" and front panel description project
-.. figure:: images/microui-fragment-dependencies.*
-   :alt: MicroUI Elements
-   :width: 70.0%
-   :align: center
-
-   MicroUI Elements
-
 First, MicroUI requires a configuration step in order to create these internal objects before the call to the ``main()`` method. The chapter :ref:`section_static_init` explains how to perform the configuration step.
 
 .. note::
@@ -75,7 +67,7 @@ Role
 This thread is called ``UIPump``. It has two roles:
 
 -  It manages all display events (``requestRender()``, ``requestShow()``, etc.)
--  It reads the I/O devices inputs and dispatches them into the event generators' listeners. See xxx inputs section
+-  It reads the I/O devices inputs and dispatches them into the event generators' listeners. See input section: :ref:`section_input`. 
 
 Memory
 ------

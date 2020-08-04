@@ -20,11 +20,23 @@ Functional Description
 
 The Display engine (or graphical engine) implements the MicroUI graphics framework. This framework is constitued of several notions: the display characteristics (size, format, backlight, contrast etc.), the drawing state machine (render, flush, wait flush completed), the images cycle life, the font and drawings. The main part of graphical engine is provided by a built-in C archive. This library manages the drawing state machine mechanism, the images and fonts. The display characteristics and the drawings are managed by the LLUI_DISPLAY implementation.
 
-xxx schema avec llui display
-
-Graphical engine is designed to let the BSP use an optional graphics processor unit (GPU) or an optional third-party drawing library. Each drawing can be implemented independantly; no have to implement all MicroUI drawings. If no extra framework is available, the graphical engine performs all drawings. In this case the graphical engine low-level implementation the BSP has to perform is very simple (four functions). 
+Graphical engine is designed to let the BSP use an optional graphics processor unit (GPU) or an optional third-party drawing library. Each drawing can be implemented independantly; no have to implement all MicroUI drawings. If no extra framework is available, the graphical engine performs all drawings in software. In this case the graphical engine low-level implementation the BSP has to perform is very simple (four functions). 
 
 MicroUI library also gives the possibility to perform some additional drawings which are not available as API in MicroUI library. Graphical engine gives a set of functions to synchronize the drawings between them, to get the destination (and sometimes source) characteristics, to call internal software drawings etc. 
+
+.. figure:: images/ui_llapi_display.*
+   :alt: MicroUI Display Low-Level
+   :width: 100%
+
+* MicroUI library `talks` with BSP through the graphical engine and header file ``LLUI_DISPLAY_impl.h``. 
+* Implementation of ``LLUI_DISPLAY_impl.h`` can `talks` with graphical engine through ``LLUI_DISPLAY.h``.
+* To perform some drawings, MicroUI uses ``LLUI_PAINTER_impl.h`` functions.
+* The drawing native functions are implemented in the CCO ``com.microej.clibrary.llimpl#microui-drawings``; this CCO must be included in BSP.
+* This CCO redirects drawings the implementation of ``ui_drawing.h``.
+* ``ui_drawing.h`` is already implemented by `software algorithms` library (not represented in previous picture).
+* ``ui_drawing.h`` can be too implemented in BSP to use a GPU for instance.
+* This Implementation is allowed to call `software algorithms` through ``ui_drawing_soft.h`` header file.
+* MicroEJ library ``Drawing`` performs same operations with header files ``LLDW_PAINTER_impl.h``, ``dw_drawing_impl.h`` and ``dw_drawing.h``; and with C file ``LLDW_PAINTER_impl.c`` also available in CCO ``com.microej.clibrary.llimpl#microui-drawings``.
 
 Front Panel (simulator display engine part) gives the same possibilities. Same constraints can be applied, same drawings can be overrided or added, same software drawing rendering is performed (down to the pixel).
 
@@ -59,7 +71,7 @@ handy guide to selecting the appropriate buffer mode according to the hardware c
 
 .. figure:: images/display_modes_nocustom.*
    :alt: Buffer Modes
-   :width: 60.0%
+   :width: 40.0%
    :align: center
 
    Buffer Modes
@@ -77,9 +89,7 @@ The next sections describe the work to do for each mode.
 Switch
 ------
 
-The switch mode is a double-buffered mode where two buffers in RAM alternately play the role of the back buffer and the display buffer. The display source is alternatively changed from one buffer to the other.
-
-Switching the source address may be done asynchronously. The synchronize function is called before starting the next set of draw operations, and must wait until the driver has switched to the new buffer.
+The switch mode is a double-buffered mode where two buffers in RAM alternately play the role of the back buffer and the display buffer. The display source is alternatively changed from one buffer to the other. Switching the source address may be done asynchronously. The synchronize function is called before starting the next set of draw operations, and must wait until the driver has switched to the new buffer.
 
 Synchronization steps are described :ref:`below <switchModeSyncSteps>`.
 
@@ -94,8 +104,6 @@ Synchronization steps are described :ref:`below <switchModeSyncSteps>`.
    :height: 160px
    :align: center
 
-   Step 1 : Drawing
-
 - | *Step 2:* Switch
   | The drawing is done. Set that the next read will be done from buffer 0.
   | Note that the display \"hardware component\" asynchronously continues to read data from buffer 1.
@@ -105,8 +113,6 @@ Synchronization steps are described :ref:`below <switchModeSyncSteps>`.
    :width: 284px
    :height: 160px
    :align: center
-
-   Step 2 : Switch
 
 - | *Step 3:* Copy
   | A copy from the buffer 0 (new display buffer) to the buffer 1 (new back buffer) must be done to keep the contents of the current drawing. The copy routine must wait until the display has finished the switch, and start asynchronously by comparison with the MicroUI drawing routine (see next step). 
@@ -121,8 +127,6 @@ Synchronization steps are described :ref:`below <switchModeSyncSteps>`.
    :height: 160px
    :align: center
 
-   Step 3 : Copy
-
 - | *Step 4:* Synchronisation
   | Waits until the copy routine has finished the full copy.
   | If the copy has not been done asynchronously, the copy must start after the display has finished the switch. It is a blocking copy because the next drawing operation has to wait until this copy is done.
@@ -135,8 +139,6 @@ Synchronization steps are described :ref:`below <switchModeSyncSteps>`.
    :width: 284px
    :height: 160px
    :align: center
-
-   Step 5 : Next draw operation
 
 
 .. _copyBufferMode:
@@ -176,7 +178,6 @@ Synchronization steps are described :ref:`below <table_copyModeSyncSteps>`.
    :height: 160px
    :align: center
 
-
 .. _directBufferMode:
 
 Direct
@@ -188,10 +189,8 @@ result in "noisy" rendering and flickering, but saves one buffer in runtime memo
 .. _fig_directMode:
 .. figure:: images/direct.*
    :alt: Display Direct Mode
-   :width: 30.0%
+   :height: 160px
    :align: center
-
-   Display Direct Mode
 
 .. _section_display_layout_byte:
 
@@ -487,13 +486,12 @@ Required Low Level API
 
 Some four low-level APIs are required to connect the display engine on the LCD driver. The functions are listed in ``LLUI_DISPLAY_impl.h``. 
 
-The initialization function is called when MicroEJ application is calling ``MicroUI.start()``. Before this call, the LCD is useless and no need to be initialized. This function consists to initialize the LCD driver and to fill the given structure ``LLUI_DISPLAY_SInitData``.  This structure has to contain pointers on two binary semaphores (see after), the back buffer address (see xxx buffer mode), the LCD *virtual* size in pixels and optionaly the LCD *physical* size in pixels.
+* ``LLUI_DISPLAY_IMPL_initialize`` : The initialization function is called when MicroEJ application is calling ``MicroUI.start()``. Before this call, the LCD is useless and no need to be initialized. This function consists to initialize the LCD driver and to fill the given structure ``LLUI_DISPLAY_SInitData``.  This structure has to contain pointers on two binary semaphores (see after), the back buffer address (see :ref:`section_display_modes`), the LCD *virtual* size in pixels and optionaly the LCD *physical* size in pixels.
+ The LCD *virtual* size is the size of the area where the drawings are visible. The LCD *physical* size is the required memory size where the area is located. Theoretical memory size is: ``lcd_width * lcd_height * bpp / 8``. On some devices the memory width (in pixels) is higher than virtual width. In this way, the graphics buffer memory size is: ``memory_width * memory_height * bpp / 8``.
 
-The LCD *virtual* size is the size of the area where the drawings are visible. The LCD *physical* size is the required memory size where the area is located. Theoretical memory size is: ``lcd_width * lcd_height * bpp / 8``. On some devices the memory width (in pixels) is higher than virtual width. In this way, the graphics buffer memory size is: ``memory_width * memory_height * bpp / 8``.
+* ``LLUI_DISPLAY_IMPL_binarySemaphoreTake`` and ``LLUI_DISPLAY_IMPL_binarySemaphoreGive``: The display engine requires two binary semaphores to synchronize its internal states. The binary semaphores must be configured in a state such that the semaphore must first be *given* before it can be *taken*. Two distincts functions have to be implemented to *take* and *give* a binary semaphore.
 
-The display engine requires two binary semaphores to synchronize its internal states. The binary semaphores must be configured in a state such that the semaphore must first be *given* before it can be *taken*. Two distincts functions have to be implemented to *take* and *give* a binary semaphore.
-
-According the display buffer mode (see xxx), the ``flush`` function has to be implemented. This function should be atomic and not performing the copy directly. Another OS task or a dedicated hardware must be configured to perform the buffer copy. 
+* ``LLUI_DISPLAY_IMPL_flush``: According the display buffer mode (see :ref:`section_display_modes`), the ``flush`` function has to be implemented. This function should be atomic and not performing the copy directly. Another OS task or a dedicated hardware must be configured to perform the buffer copy. 
 
 Optional Low Level API
 ======================
@@ -570,16 +568,17 @@ Display Synchronization
 =======================
 
 Graphical engine defines some points in the rendering timeline. 
+
 #. The rendering: MicroEJ application is calling ``Painter`` drawing methods
-#. The LCD synchronization: MicroEJ application has called Display.flush() and the LLUI_DISPLAY driver is waiting for the LCD tearing interrupt
-#. The frame buffer updates starts (by switching back and frame buffers or by copying back buffer content in frame buffer, see xxx buffer mode).
+#. The LCD synchronization: MicroEJ application has called ``Display.flush()`` and the LLUI_DISPLAY driver is waiting for the LCD tearing interrupt
+#. The frame buffer update starts (by switching back and frame buffers or by copying back buffer content in frame buffer, see :ref:`section_display_modes`).
 #. Back to rendering 
 
 xxx schemas copy / switch trois cercles renderging / wait flush / update frame buffer
 
 Waiting the LCD tearing signal ensures to not update the frame buffer too early. It forces to respect the LCD refreshing time. Otherwise the LCD visible data can be corrupted: flickering, glitches etc.
 
-The LCD tearing signal occurs at fixed frequency. This signal fixed the maximum framerate. Even for a drawing which take few milliseconds, the framework has to wait the tearing signal to continue. When a drawing time is higher than the period between two tearing signals, the framework has to wait the next tearing signal. The framerate is so divided by two.
+The LCD tearing signal occurs at fixed frequency. This signal fixes the maximum framerate. Even for a drawing which takes few milliseconds, the framework has to wait the tearing signal to continue. When a drawing time is higher than the period between two tearing signals, the framework has to wait the next tearing signal. The framerate is so divided by two.
 
 xxx chronogrammes dessin normal / court / long / tres long
 les deux mosdes: avec la copie avant ou apres (switch / copy)
@@ -637,7 +636,7 @@ Overview
 
 Display engine is built for a dedicated LCD pixel format (see xxx pixel structure xxx revoir nom ?). For this pixel format, the display engine must be able to perform some shape drawings with or without alpha blending and to draw images with or without alpha blending. In addition, it must be able to read all images formats.
 
-The MicroEJ application may not use all MicroUI shape drawings options and may not use all images formats. It is not possible to detect what the application is needed, so no optimizations can be performed at application compiletime. However, for a given application, the platform can be built with a reduced set of pixel support. 
+The MicroEJ application may not use all MicroUI shape drawings options and may not use all images formats. It is not possible to detect what the application is needed, so no optimization can be performed at application compiletime. However, for a given application, the platform can be built with a reduced set of pixel support. 
 
 All pixel format manipulations (read, write, copy) are using dedicated functions. It is possible to remove some functions or to use generic functions. The advantage is to reduce the memory footprint. The inconvenient is that some features are removed (the application should not use them) or some features are slower (generic functions are slower than dedicated functions).
 
@@ -648,7 +647,7 @@ There are five pixel *conversion* modes:
 
 -  draw an image without global alpha blending: copy a pixel from a format to the destination format (LCD format)
 -  draw an image with global alpha blending: copy a pixel with alpha blending from a format to the destination format (LCD format)
--  draw a shape: draw a pixel in destination format
+-  draw a shape: draw a pixel in destination format (LCD format)
 -  load a ``ResourceImage`` with an output format: convert a pixel in ARGB8888 format to the output format
 -  read a pixel from an image (rotate, scale, flip): read any pixel formats 
 
@@ -678,251 +677,6 @@ How to get the file:
 
 #. xxx
 
-
-.. _display_hard_accelerator:
-
-Hardware Accelerator XXX to remove
-====================
-
-Overview
---------
-
-The display module allows to use an hardware accelerator to perform some
-drawings: fill a rectangle, draw an image, rotate an image etc. Some
-optional functions are available in ``LLDISPLAY_EXTRA.h`` file (see
-:ref:`LLDISPLAY-EXTRA-API-SECTION`). These functions are not
-automatically call by the display module. The display module must be
-configured during the MicroEJ Platform construction specifying which
-hardware accelerator to use. It uses the property
-``hardwareAccelerator`` in ``display/display.properties`` file to select
-a hardware accelerator (see :ref:`section_display_installation`).
-
-The following table lists the available hardware accelerators supported
-by MicroEJ, their full names, short names (used in the next tables) and
-the ``hardwareAccelerator`` property value (see
-:ref:`section_display_installation`).
-
-.. table:: Hardware Accelerators
-
-   +------------------------------------------+-------------+-------------+
-   |                                          | Short name  | Property    |
-   +==========================================+=============+=============+
-   | Renesas Graphics Library RGA  [1]_       | RGA         | rga         |
-   +------------------------------------------+-------------+-------------+
-   | Renesas TES Dave/2d                      | Dave2D      | dave2d      |
-   +------------------------------------------+-------------+-------------+
-   | STMicroelectronics Chrom-ART Graphics    | DMA2D       | dma2d       |
-   | Accelerator                              |             |             |
-   +------------------------------------------+-------------+-------------+
-   | Custom Hardware Accelerator              | Custom      | custom [2]_ |
-   +------------------------------------------+-------------+-------------+
-
-.. note::
-
-   It is possible to target an hardware accelerator which is not
-   supported by MicroEJ yet. Set the property ``hardwareAccelerator`` to
-   ``custom`` to force display module to call all drawing functions
-   which can be accelerated. The LLDISPLAY implementation is able or not
-   to implement a function. If not, the software algorithm will be used.
-
-The available list of supported hardware accelerators is MicroEJ
-Architecture dependent. For instance, the STMicroelectronics Chrom-ART
-Graphics Accelerator is only available for the MicroEJ Architecture for
-Cortex-M4 and Cortex-M7. The Renesas Graphics Library RGA is only
-available for the MicroEJ Architecture for Cortex-A9. The following
-table shows in which MicroEJ Architecture an hardware accelerator is
-available.
-
-.. tabularcolumns:: |p{5cm}|p{1cm}|p{1cm}|p{1cm}|p{1cm}|
-.. table:: Hardware Accelerators according MicroEJ Architectures
-
-    +---------------------+-----+--------+-------+--------+
-    |                     | RGA | Dave2D | DMA2D | Custom |
-    +=====================+=====+========+=======+========+
-    | ARM Cortex-M0+ IAR  |     |        |       | •      |
-    +---------------------+-----+--------+-------+--------+
-    | ARM Cortex-M4 ARMCC |     |        | •     | •      |
-    +---------------------+-----+--------+-------+--------+
-    | ARM Cortex-M4 GCC   |     | •      | •     | •      |
-    +---------------------+-----+--------+-------+--------+
-    | ARM Cortex-M4 IAR   |     |        | •     | •      |
-    +---------------------+-----+--------+-------+--------+
-    | ARM Cortex-M7 ARMCC |     |        | •     | •      |
-    +---------------------+-----+--------+-------+--------+
-
-.. note::
-
-   Some hardware accelerators may not be available in off-the-self
-   architectures . However they are available on some specific
-   architectures. Please consult the engineering services page on
-   MicroEJ website.
-
-All hardware accelerators are not available for each number of
-bits-per-pixel configuration. The following table illustrates in which
-display stack according ``bpp``, an hardware accelerator can be used.
-
-.. tabularcolumns:: |p{2cm}|p{1cm}|p{1cm}|p{1cm}|p{1cm}|
-.. table:: Hardware Accelerators according BPP
-
-   +-----------------------------+---------+---------+---------+---------+
-   |                             | RGA     | Dave2D  | DMA2D   | Custom  |
-   +=============================+=========+=========+=========+=========+
-   | 1 BPP                       |         |         |         |         |
-   +-----------------------------+---------+---------+---------+---------+
-   | C1                          |         |         |         |         |
-   +-----------------------------+---------+---------+---------+---------+
-   | 2 BPP                       |         |         |         |         |
-   +-----------------------------+---------+---------+---------+---------+
-   | C2                          |         |         |         |         |
-   +-----------------------------+---------+---------+---------+---------+
-   | 4 BPP                       |         |         |         |         |
-   +-----------------------------+---------+---------+---------+---------+
-   | C4                          |         |         |         |         |
-   +-----------------------------+---------+---------+---------+---------+
-   | 8 BPP                       |         |         |         |         |
-   +-----------------------------+---------+---------+---------+---------+
-   | 16 BPP                      |         |         |         | •       |
-   +-----------------------------+---------+---------+---------+---------+
-   | RGB565                      | •       | •       | •       | •       |
-   +-----------------------------+---------+---------+---------+---------+
-   | ARGB1555                    | •       | •       | •       | •       |
-   +-----------------------------+---------+---------+---------+---------+
-   | ARGB4444                    | •       | •       | •       | •       |
-   +-----------------------------+---------+---------+---------+---------+
-   | 24 BPP                      |         |         |         | •       |
-   +-----------------------------+---------+---------+---------+---------+
-   | RGB888                      |         |         | •       | •       |
-   +-----------------------------+---------+---------+---------+---------+
-   | 32 BPP                      |         |         |         | •       |
-   +-----------------------------+---------+---------+---------+---------+
-   | ARGB8888                    | •       | •       | •       | •       |
-   +-----------------------------+---------+---------+---------+---------+
-
-.. [1]
-   hardware or software implementation
-
-.. [2]
-   see next note
-
-Features and Limits
--------------------
-
-Each hardware accelerator has a list of features (list of drawings the
-hardware accelerator can perform) and some constraints. When the display
-module is configured to use an hardware accelerator, it takes in
-consideration these features and limits. If a drawing is detected by the
-display module as a drawing to be hardware accelerated, the LLDISPLAY
-implementation *must* configure and use the hardware accelerator to
-perform the full drawing (not just a part of drawing).
-
-.. note::
-
-   The *custom* hardware generator does not have any limit by default.
-   This is the LLDISPLAY implementation which fixes the limits.
-
-The following table lists the algorithms accelerated by each hardware
-accelerator.
-
-.. tabularcolumns:: |p{3cm}|p{1cm}|p{1cm}|p{1cm}|
-.. table:: Hardware Accelerators Algorithms
-
-   +-----------------------------------+-----------+-----------+-----------+
-   |                                   | RGA       | Dave2D    | DMA2D     |
-   +===================================+===========+===========+===========+
-   | Fill a rectangle                  | •         | •         | •         |
-   +-----------------------------------+-----------+-----------+-----------+
-   | Draw an image                     | •         | •         | •         |
-   +-----------------------------------+-----------+-----------+-----------+
-   | Scale an image                    | •         |           |           |
-   +-----------------------------------+-----------+-----------+-----------+
-   | Rotate an image                   | •         |           |           |
-   +-----------------------------------+-----------+-----------+-----------+
-
-Images
-------
-
-The available list of supported image formats is not the same for all
-hardware accelerators. Furthermore some hardware accelerators require a
-custom header before the RAW pixel data, require a padding between each
-line etc.. MicroEJ manages these contraints for supported hardware
-accelerators. For *custom* hardware accelerator, no image header can be
-added and no padding can be set.
-
-The following table illustratres the RAW image formats supported by each
-hardware accelerator.
-
-.. tabularcolumns:: |p{2cm}|p{1.5cm}|p{1.5cm}|p{1.5cm}|
-.. table:: Hardware Accelerators RAW Image Formats
-
-   +-----------------------------------+-----------+-----------+-----------+
-   |                                   | RGA       | Dave2D    | DMA2D     |
-   +===================================+===========+===========+===========+
-   | A1                                | •  [3]_   |           |           |
-   +-----------------------------------+-----------+-----------+-----------+
-   | A2                                |           |           |           |
-   +-----------------------------------+-----------+-----------+-----------+
-   | A4                                | •  [4]_   |           | •         |
-   +-----------------------------------+-----------+-----------+-----------+
-   | A8                                | •  [5]_   |           | •         |
-   +-----------------------------------+-----------+-----------+-----------+
-   | C1                                |           |           |           |
-   +-----------------------------------+-----------+-----------+-----------+
-   | C2                                |           |           |           |
-   +-----------------------------------+-----------+-----------+-----------+
-   | C4                                |           |           |           |
-   +-----------------------------------+-----------+-----------+-----------+
-   | AC11                              |           |           |           |
-   +-----------------------------------+-----------+-----------+-----------+
-   | AC22                              |           |           |           |
-   +-----------------------------------+-----------+-----------+-----------+
-   | AC44                              |           |           |           |
-   +-----------------------------------+-----------+-----------+-----------+
-   | RGB565                            | •         | •         | •         |
-   +-----------------------------------+-----------+-----------+-----------+
-   | ARGB1555                          | •         | •         | •         |
-   +-----------------------------------+-----------+-----------+-----------+
-   | ARGB4444                          | •         | •         | •         |
-   +-----------------------------------+-----------+-----------+-----------+
-   | RGB888                            |           |           | •         |
-   +-----------------------------------+-----------+-----------+-----------+
-   | ARGB8888                          | •         | •         | •         |
-   +-----------------------------------+-----------+-----------+-----------+
-
-The RAW image given as parameter (in input and/or in output) respects
-the hardware accelerator specification. For instance a RAW image with
-4BPP must be often aligned on 8 bits, even if its size is odd. The RAW
-image size given as parameter is the *software* size. That means it is
-the size of the original image.
-
-Example for a A4 image with required alignment on 8 bits:
-
--  Original image width in pixels (== width in MicroEJ Application): 47
-
--  Hardware image width in pixels (== line width in pixels in RAW image
-   data): 48
-
--  Width in pixels available in ``LLDISPLAY``
-   (``((LLDISPLAY_SImage*)src)->width``): 48
-
--  Hardware width in bytes (== line width in bytes in RAW image data):
-   48 / 2 = 24
-
-The hardware size may be higher than the software size (like in the
-example). However the number of pixels to draw
-(``((LLDISPLAY_SDrawImage*)drawing)->src_width``) is *always* smaller or
-equal to the software area size. That means the display module never
-asks to draw the pixels which are outside the software area. The
-hardware size is only useful to be compatible with the hardware
-accelerator restrictions about memory alignment.
-
-.. [3]
-   maximum size <= display width
-
-.. [4]
-   maximum size <= display width
-
-.. [5]
-   maximum size <= display width
 
 
 .. _section_display_implementation:

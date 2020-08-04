@@ -12,7 +12,7 @@ Graphics User Interface
     uiLed
     uiInput
     uiDisplay
-    image
+    uiImage
     font
     uiSimulation
 
