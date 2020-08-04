@@ -24,20 +24,6 @@ Graphical engine is designed to let the BSP use an optional graphics processor u
 
 MicroUI library also gives the possibility to perform some additional drawings which are not available as API in MicroUI library. Graphical engine gives a set of functions to synchronize the drawings between them, to get the destination (and sometimes source) characteristics, to call internal software drawings etc. 
 
-.. figure:: images/ui_llapi_display.*
-   :alt: MicroUI Display Low-Level
-   :width: 100%
-
-* MicroUI library `talks` with BSP through the graphical engine and header file ``LLUI_DISPLAY_impl.h``. 
-* Implementation of ``LLUI_DISPLAY_impl.h`` can `talks` with graphical engine through ``LLUI_DISPLAY.h``.
-* To perform some drawings, MicroUI uses ``LLUI_PAINTER_impl.h`` functions.
-* The drawing native functions are implemented in the CCO ``com.microej.clibrary.llimpl#microui-drawings``; this CCO must be included in BSP.
-* This CCO redirects drawings the implementation of ``ui_drawing.h``.
-* ``ui_drawing.h`` is already implemented by `software algorithms` library (not represented in previous picture).
-* ``ui_drawing.h`` can be too implemented in BSP to use a GPU for instance.
-* This Implementation is allowed to call `software algorithms` through ``ui_drawing_soft.h`` header file.
-* MicroEJ library ``Drawing`` performs same operations with header files ``LLDW_PAINTER_impl.h``, ``dw_drawing_impl.h`` and ``dw_drawing.h``; and with C file ``LLDW_PAINTER_impl.c`` also available in CCO ``com.microej.clibrary.llimpl#microui-drawings``.
-
 Front Panel (simulator display engine part) gives the same possibilities. Same constraints can be applied, same drawings can be overrided or added, same software drawing rendering is performed (down to the pixel).
 
 .. _section_display_modes:
@@ -481,8 +467,28 @@ When the value is one among this list: ``ARGB8888 | RGB888 | RGB565 | ARGB1555 |
 When the value is one among this list: ``1 | 2 | 4 | 8 | 16 | 24 | 32``, the display module considers the LCD pixel representation as generic but not standard. In this case, the driver must implement functions that
 convert MicroUI's standard 32 bits ARGB colors to LCD color representation (see :ref:`LLDISPLAY-API-SECTION`). This mode is often used when the pixel representation is not ``ARGB`` or ``RGB`` but ``BGRA`` or ``BGR`` instead. This mode can also be used when the number of bits for a color component (alpha, red, green or blue) is not standard or when the value does not represent a color but an index in an LUT.
 
+Low-Level API
+=============
+
+Overview
+--------
+
+.. figure:: images/ui_llapi_display.*
+   :alt: MicroUI Display Low-Level
+   :width: 70%
+
+* MicroUI library `talks` with BSP through the graphical engine and header file ``LLUI_DISPLAY_impl.h``. 
+* Implementation of ``LLUI_DISPLAY_impl.h`` can `talk` with graphical engine through ``LLUI_DISPLAY.h``.
+* To perform some drawings, MicroUI uses ``LLUI_PAINTER_impl.h`` functions.
+* The drawing native functions are implemented in the CCO ``com.microej.clibrary.llimpl#microui-drawings``; this CCO must be included in BSP.
+* This CCO redirects drawings the implementation of ``ui_drawing.h``.
+* ``ui_drawing.h`` is already implemented by `software algorithms` library (not represented in previous picture).
+* ``ui_drawing.h`` can be too implemented in BSP to use a GPU for instance.
+* This Implementation is allowed to call `software algorithms` through ``ui_drawing_soft.h`` header file.
+* MicroEJ library ``Drawing`` performs same operations with header files ``LLDW_PAINTER_impl.h``, ``dw_drawing_impl.h`` and ``dw_drawing.h``; and with C file ``LLDW_PAINTER_impl.c`` also available in CCO ``com.microej.clibrary.llimpl#microui-drawings``.
+
 Required Low Level API
-======================
+----------------------
 
 Some four low-level APIs are required to connect the display engine on the LCD driver. The functions are listed in ``LLUI_DISPLAY_impl.h``. 
 
@@ -494,18 +500,16 @@ Some four low-level APIs are required to connect the display engine on the LCD d
 * ``LLUI_DISPLAY_IMPL_flush``: According the display buffer mode (see :ref:`section_display_modes`), the ``flush`` function has to be implemented. This function should be atomic and not performing the copy directly. Another OS task or a dedicated hardware must be configured to perform the buffer copy. 
 
 Optional Low Level API
-======================
+----------------------
 
-Several low-level API are available in ``LLUI_DISPLAY_impl.h``. They are already implemented as *weak* functions in the display engine and return no error. These optional features concern the LCD backlight and constrast, LCD characteristics (is colored display, double buffer), colors conversions (see xxx pixel structure and xxx lut) and images extra features (see xxx images).
+Several low-level API are available in ``LLUI_DISPLAY_impl.h``. They are already implemented as *weak* functions in the display engine and return no error. These optional features concern the LCD backlight and constrast, LCD characteristics (is colored display, double buffer), colors conversions (see :ref:`display_pixel_structure` and :ref:`display_lut`) etc.
 
 Painter Low Level API
-=====================
+---------------------
 
-All MicroUI drawings (available in ``Painter`` class) are calling a native function. The MicroUI native drawing functions are listed in ``LLUI_PAINTER_impl.h``. The implementation must take care about a lot of constraints: synchronization between drawings, graphical engine notification, MicroUI ``GraphicsContext`` clip and colors, flush dirty area etc. The principle of implementing a MicroUI drawing function is described in the chapter xxx. 
+All MicroUI drawings (available in ``Painter`` class) are calling a native function. The MicroUI native drawing functions are listed in ``LLUI_PAINTER_impl.h``. The implementation must take care about a lot of constraints: synchronization between drawings, graphical engine notification, MicroUI ``GraphicsContext`` clip and colors, flush dirty area etc. The principle of implementing a MicroUI drawing function is described in the chapter :ref:`display_drawing_native`. 
 
-An implementation of this file is already available on MicroEJ Central Repository. This implementation respects the synchronization between drawings, the graphical engine notification, reduce (when possible) the MicroUI ``GraphicsContext`` clip constraints and update (when possible) the flush dirty area. 
-
-This implementation does not perform the drawings. It only calls the equivalent of drawing available in ``ui_drawing.h``. This allows to simplify how to use a GPU (or a third-party library) to perform a drawing: the ``ui_drawing.h`` implementation has just to take in consideration the  MicroUI ``GraphicsContext`` clip and colors and flush dirty area. Synchronization with the graphical engine is already performed.
+An implementation of ``LLUI_PAINTER_impl.h`` is already available on MicroEJ Central Repository. This implementation respects the synchronization between drawings, the graphical engine notification, reduce (when possible) the MicroUI ``GraphicsContext`` clip constraints and update (when possible) the flush dirty area. This implementation does not perform the drawings. It only calls the equivalent of drawing available in ``ui_drawing.h``. This allows to simplify how to use a GPU (or a third-party library) to perform a drawing: the ``ui_drawing.h`` implementation has just to take in consideration the  MicroUI ``GraphicsContext`` clip and colors and flush dirty area. Synchronization with the graphical engine is already performed.
 
 In addition with the implementation of ``LLUI_PAINTER_impl.h``, an implementation of ``ui_drawing.h`` is already available in graphical engine (in *weak* mode). This allows to implement only the functions the GPU is able to perform. For a given drawing, the weak function implementation is calling the equivalent of drawing available in ``ui_drawing_soft.h``. This file lists all drawing functions implemented by the graphical engine.
 
@@ -513,29 +517,29 @@ The graphical engine implementation of ``ui_drawing_soft.h`` is performing the d
 
 The BSP implementation is also allowed to call ``ui_drawing_soft.h`` algorithms, one or several times per function to implement. For instance, a GPU may be able to draw an image whose format is RGB565. But if the image format is ARGB1555, BSP implementation can call ``UI_DRAWING_SOFT_drawImage`` function.
 
-xxx add a schema des calls possibles / gpu / soft algo
-
 Graphical Engine API
-====================
+--------------------
 
 Graphical engine provides a set of functions to interact with the C archive. Thes functions allows to retrieve some drawing characteristics, synchronize drawings between them, notify the end of flush and drawings etc. 
 
 The functions are available in ``LLUI_DISPLAY.h``. 
+
+.. _display_drawing_native:
 
 Drawing Native
 ==============
 
 As explained upper, MicroUI implementation provides a dedicated header file which lists all MicroUI Painter drawings native function. The implementation of these functions has to respect several rules to not corrupt the MicroUI execution (flickering, memory corruption, unknown behavior etc.). These rules are already respected in the CCO available in MicroEJ Central Repository. In addition, MicroUI allows to add some custom drawings. The implementation of MicroUI Painter native drawings should be used as model to implement the custom drawings.
 
-All native functions must have a ``MICROUI_GraphicsContext*`` as parameter (often first parameter). This identifies the destination target: the MicroUI ``GraphicsContext``. This target is retrieved in MicroEJ application calling the method ``gc.getSNIContext()``. This method returns a byte array which is directly mapped on the ``MICROUI_GraphicsContext`` structure in MicroUI native drawing function declaration.
+All native functions must have a ``MICROUI_GraphicsContext*`` as parameter (often first parameter). This identifies the destination target: the MicroUI ``GraphicsContext``. This target is retrieved in MicroEJ application calling the method ``GraphicsContext.getSNIContext()``. This method returns a byte array which is directly mapped on the ``MICROUI_GraphicsContext`` structure in MicroUI native drawing function declaration.
  
 A graphics context holds a clip and the drawer is not allowed to perform a drawing outside this clip (otherwise the behavior is unknown). Note the bottom-right coordinates might be smaller than top-left (in x and/or y) when the clip width and/or height is null. The clip may be disabled (when the current drawing fits the clip); this allows to reduce runtime. See ``LLUI_DISPLAY_isClipEnabled()``.
 
-Graphical engine requires the synchronization between the drawing. To do that, it requires a call to ``LLUI_DISPLAY_requestDrawing`` at the beginning of native function implementation. This function takes as parameter the graphics context and the pointer on the native function itself. This pointer must be casted in a ``SNI_callback``. 
-
 .. note::
 
-   Several clip functions are available in LLUI_DISPLAY.h to check if a drawing fits the clip.
+   Several clip functions are available in ``LLUI_DISPLAY.h`` to check if a drawing fits the clip.
+
+Graphical engine requires the synchronization between the drawing. To do that, it requires a call to ``LLUI_DISPLAY_requestDrawing`` at the beginning of native function implementation. This function takes as parameter the graphics context and the pointer on the native function itself. This pointer must be casted in a ``SNI_callback``. 
 
 The drawing function must update the next ``Display.flush()`` area (dirty area). If not performed, the next call to ``Display.flush()`` will not call ``LLUI_DISPLAY_IMPL_flush()`` function.
  
@@ -562,32 +566,63 @@ The native function implementation pattern is:
       // else: refused drawing
    }
 
-xxx schema d'un appel natif avec recall auto (truc avec deux lignes verticales et fleches)
-
 Display Synchronization
 =======================
 
-Graphical engine defines some points in the rendering timeline. 
+Overview
+--------
 
-#. The rendering: MicroEJ application is calling ``Painter`` drawing methods
-#. The LCD synchronization: MicroEJ application has called ``Display.flush()`` and the LLUI_DISPLAY driver is waiting for the LCD tearing interrupt
-#. The frame buffer update starts (by switching back and frame buffers or by copying back buffer content in frame buffer, see :ref:`section_display_modes`).
-#. Back to rendering 
+Graphical engine defines some points in the rendering timeline. This chapter explains why to use LCD tearing signal and its consequences. Some chronograms describe several use cases: with and without LCD tearing signal, long drawings, long flush time etc. Times are in milliseconds. To simplify chronograms views, the LCD refresh rate is every 16ms (62.5Hz). 
 
-xxx schemas copy / switch trois cercles renderging / wait flush / update frame buffer
+Captions definition:
 
-Waiting the LCD tearing signal ensures to not update the frame buffer too early. It forces to respect the LCD refreshing time. Otherwise the LCD visible data can be corrupted: flickering, glitches etc.
+* UI: It is the UI task which performs the drawings in the back buffer. At the end of drawing, the examples consider the UI thread calls ``Display.flush()`` 1 millisecond after the end of drawing. At this moment, a flush can start (the call to ``Display.flush()`` is symbolized by a simple `peak` in chronograms).
+* Flush: In :ref:`copy<copyBufferMode>` mode, it is the time to transfer the content of back buffer to display buffer. In :ref:`switch<switchBufferMode>` mode, it is the time to swap back and display buffers (often instantaneous) and the time to recopy the content of new display buffer to new back buffer. During this time, the back buffer is `in use` and UI task has to wait the end of copy before starting a new drawing. 
+* Tearing: The peaks show the tearing signals.
+* Rendering frequency: the frequency between the start of a drawing to the end of flush.
 
-The LCD tearing signal occurs at fixed frequency. This signal fixes the maximum framerate. Even for a drawing which takes few milliseconds, the framework has to wait the tearing signal to continue. When a drawing time is higher than the period between two tearing signals, the framework has to wait the next tearing signal. The framerate is so divided by two.
+Tearing Signal
+--------------
 
-xxx chronogrammes dessin normal / court / long / tres long
-les deux mosdes: avec la copie avant ou apres (switch / copy)
+In this example, the drawing time is 7ms, the time between end of drawing and call to ``Display.flush()`` is 1ms and the flush time is 6ms. So the expected rendering frequency is 7 + 1 + 6 = 14ms. Flush starts just after the call to ``Display.flush()`` and the next drawing starts just after the end of flush. Tearing signal is not taken in consideration. By consequence the LCD content is refreshed during the LCD refresh time. The content can be corrupted: flickering, glitches etc. The rendering frequency is faster than LCD refresh rate.
 
-Some LCD does not provide the tearing signal. In this case the synchronization can not be done. The framerate is so cadenced on the drawing time itself and the maximum framerate can be very higher than the LCD refresh time.
+.. figure:: images/uiDisplaySync01.*
+   :width: 100%
 
-xxx schema direct mode : deux ronds
+In this example, the times are identical to previous example. The tearing signal is used to start the flush in respecting the LCD refreshing time. The rendering frequency becomes smaller: it is cadenced on the tearing signal, every 16ms. During 2ms, the CPU can schedule other tasks or goes in idle mode. The rendering frequency is equal to LCD refresh rate.
 
-xxx chronogramme dessin 20ms
+.. figure:: images/uiDisplaySync02.*
+   :width: 100%
+
+In this example, the drawing time is 14ms, the time between end of drawing and call to ``Display.flush()`` is 1ms and the flush time is 6ms. So the expected rendering frequency is 14 + 1 + 6 = 21ms. Flush starts just after the call to ``Display.flush()`` and the next drawing starts just after the end of flush. Tearing signal is not taken in consideration. The rendering frequency is higher than LCD refresh rate.
+
+.. figure:: images/uiDisplaySync03.*
+   :width: 100%
+ 
+In this example, the times are identical to previous example. The tearing signal is used to start the flush in respecting the LCD refreshing time. The drawing time + flush time is higher than LCD tearing signal period. So the flush cannot start at every tearing peak: it is cadenced on two tearing signals, every 32ms. During 11ms, the CPU can schedule other tasks or goes in idle mode. The rendering frequency is equal to LCD refresh rate divided by two.
+
+.. figure:: images/uiDisplaySync04.*
+   :width: 100%
+
+Additional Buffer 
+-----------------
+
+Some devices take a lot of time to send back buffer content to display buffer. The following examples demonstrate the consequence on rendering frequency. The use of an additional buffer optimizes this frequency, however it uses a lot of RAM memory.
+
+In this example, the drawing time is 5ms, the time between end of drawing and call to ``Display.flush()`` is 1ms and the flush time is 14ms. So the expected rendering frequency is 5 + 1 + 14 = 20ms. Flush starts just after the call to ``Display.flush()`` and the next drawing starts just after the end of flush. Tearing signal is not taken in consideration. The rendering frequency is cadenced on drawing time + flush time.
+
+.. figure:: images/uiDisplaySync05.*
+   :width: 100%
+
+As mentionned upper, the idea is to use two back buffers. First, UI task is drawing in back buffer ``A``. Just after the call to ``Display.flush()``, the flush can start. At same moment, the content of back buffer ``A`` is copied in back buffer ``B``. During the flush time (copy of back buffer ``A`` to display buffer), the back buffer ``B`` can be used by UI task to continue the drawings. When drawings in back buffer ``B`` are done (and after call to ``Display.flush()``), the DMA copy of back buffer ``B`` to back buffer ``A`` cannot start: the copy can only start when the flush is fully done because the flush is using the back buffer ``A``. As soon as the flush is done, a new flush (and DMA copy) can start. The rendering frequency is cadenced on flush time.
+
+.. figure:: images/uiDisplaySync06.*
+   :width: 100%
+
+The previous example doesn't take in consideration the LCD tearing signal. However this technique of double back buffers is not efficient when tearing signal is used. The flush cannot start until tearing signal. During this waiting time, DMA copy and next drawing can be done or started. As soon as the drawing is done (and after call to ``Display.flush()``), the UI task has to wait the end of flush (which has started in late). By consequence, the rendering frequency is cadenced on two LCD tearing signals. 
+
+.. figure:: images/uiDisplaySync07.*
+   :width: 100%
 
 Antialiasing
 ============
@@ -628,54 +663,56 @@ This solution requires several conditions:
 -  Application can only use blending ranges provided by the LUT. Otherwise the display driver is not able to find the range and the default color will be used to perform the blending.
 -  Rendering of dynamic images (images decoded at runtime) may be wrong because the ARGB colors may be out of LUT range.
 
-Image Pixel Conversion
-======================
+..
 
-Overview
---------
+   Image Pixel Conversion
+   ======================
 
-Display engine is built for a dedicated LCD pixel format (see xxx pixel structure xxx revoir nom ?). For this pixel format, the display engine must be able to perform some shape drawings with or without alpha blending and to draw images with or without alpha blending. In addition, it must be able to read all images formats.
+      Overview
+      --------
 
-The MicroEJ application may not use all MicroUI shape drawings options and may not use all images formats. It is not possible to detect what the application is needed, so no optimization can be performed at application compiletime. However, for a given application, the platform can be built with a reduced set of pixel support. 
+      Display engine is built for a dedicated LCD pixel format (see :ref:`display_pixel_structure`). For this pixel format, the display engine must be able to perform some shape drawings with or without alpha blending and to draw images with or without alpha blending. In addition, it must be able to read all images formats.
 
-All pixel format manipulations (read, write, copy) are using dedicated functions. It is possible to remove some functions or to use generic functions. The advantage is to reduce the memory footprint. The inconvenient is that some features are removed (the application should not use them) or some features are slower (generic functions are slower than dedicated functions).
+      The MicroEJ application may not use all MicroUI shape drawings options and may not use all images formats. It is not possible to detect what the application is needed, so no optimization can be performed at application compiletime. However, for a given application, the platform can be built with a reduced set of pixel support. 
 
-Memory
-------
+      All pixel format manipulations (read, write, copy) are using dedicated functions. It is possible to remove some functions or to use generic functions. The advantage is to reduce the memory footprint. The inconvenient is that some features are removed (the application should not use them) or some features are slower (generic functions are slower than dedicated functions).
 
-There are five pixel *conversion* modes:
+      Memory
+      ------
 
--  draw an image without global alpha blending: copy a pixel from a format to the destination format (LCD format)
--  draw an image with global alpha blending: copy a pixel with alpha blending from a format to the destination format (LCD format)
--  draw a shape: draw a pixel in destination format (LCD format)
--  load a ``ResourceImage`` with an output format: convert a pixel in ARGB8888 format to the output format
--  read a pixel from an image (rotate, scale, flip): read any pixel formats 
+      There are five pixel *conversion* modes:
 
-.. table:: Pixel Conversion
+      -  draw an image without global alpha blending: copy a pixel from a format to the destination format (LCD format)
+      -  draw an image with global alpha blending: copy a pixel with alpha blending from a format to the destination format (LCD format)
+      -  draw a shape: draw a pixel in destination format (LCD format)
+      -  load a ``ResourceImage`` with an output format: convert a pixel in ARGB8888 format to the output format
+      -  read a pixel from an image (rotate, scale, flip): read any pixel formats 
 
-   +------------------------------------------+-------------+-------------+-------------+-------------+
-   |                                          | Nb input    | Nb output   | Number of   | Function    |
-   |                                          | formats     | formats     | combinations| size (byte) |
-   +==========================================+=============+=============+=============+=============+
-   | Draw image without global alpha          |     22      |      1      |     22      |     xxx     |
-   +------------------------------------------+-------------+-------------+-------------+-------------+
-   | Draw image with global alpha             |     22      |      1      |     22      |     xxx     |
-   +------------------------------------------+-------------+-------------+-------------+-------------+
-   | Draw a shape                             |      2      |      1      |      2      |     xxx     |
-   +------------------------------------------+-------------+-------------+-------------+-------------+
-   | Load a  ``ResourceImage``                |      1      |      6      |      6      |     xxx     |
-   +------------------------------------------+-------------+-------------+-------------+-------------+
-   | Read an image                            |     22      |      1      |     22      |     xxx     |
-   +------------------------------------------+-------------+-------------+-------------+-------------+
+      .. table:: Pixel Conversion
 
-Linker File
------------
+         +------------------------------------------+-------------+-------------+-------------+-------------+
+         |                                          | Nb input    | Nb output   | Number of   | Function    |
+         |                                          | formats     | formats     | combinations| size (byte) |
+         +==========================================+=============+=============+=============+=============+
+         | Draw image without global alpha          |     22      |      1      |     22      |     xxx     |
+         +------------------------------------------+-------------+-------------+-------------+-------------+
+         | Draw image with global alpha             |     22      |      1      |     22      |     xxx     |
+         +------------------------------------------+-------------+-------------+-------------+-------------+
+         | Draw a shape                             |      2      |      1      |      2      |     xxx     |
+         +------------------------------------------+-------------+-------------+-------------+-------------+
+         | Load a  ``ResourceImage``                |      1      |      6      |      6      |     xxx     |
+         +------------------------------------------+-------------+-------------+-------------+-------------+
+         | Read an image                            |     22      |      1      |     22      |     xxx     |
+         +------------------------------------------+-------------+-------------+-------------+-------------+
 
-All pixel functions are listed in a platform linker file. It is possible to edit this file to remove some features or to share some functions (using generic function).
+      Linker File
+      -----------
 
-How to get the file:
+      All pixel functions are listed in a platform linker file. It is possible to edit this file to remove some features or to share some functions (using generic function).
 
-#. xxx
+      How to get the file:
+
+      #. xxx
 
 
 
@@ -689,7 +726,7 @@ display (see :ref:`section_display_modes`): Switch, Copy and Direct.
 It provides some low level API. The BSP has to implement these LLAPI,
 making the link between the MicroUI C library ``display`` and the BSP
 display driver. The LLAPI to implement are listed in the header file
-``LLDISPLAY_impl.h``.
+``LLUI_DISPLAY_impl.h``.
 
 When there is no display on the board, a *stub* implementation of C
 library is available. This C library must be linked by the third-party C
@@ -701,7 +738,7 @@ Dependencies
 
 -  MicroUI module (see :ref:`section_microui`)
 
--  ``LLDISPLAY_impl.h`` implementation if standard or custom
+-  ``LLUI_DISPLAY_impl.h`` implementation if standard or custom
    implementation is chosen (see
    :ref:`section_display_implementation` and
    :ref:`LLDISPLAY-API-SECTION`).

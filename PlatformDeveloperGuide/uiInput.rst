@@ -93,8 +93,8 @@ The event generator is responsible for converting incoming data into a MicroUI e
 
 If the event generator is not available in the application classpath, a warning is thrown (with a stack trace) and the application continues. In this case, all events sent by BSP to this event generator are ignored because no event generator is able to decode them.
 
-Implementation
-==============
+Low-Level API
+=============
 
 The implementation of the MicroUI ``Event Generator`` APIs provides some low level APIs. The BSP has to implement these LLAPI, making the link between the MicroUI C library ``inputs`` and the BSP input devices
 drivers.

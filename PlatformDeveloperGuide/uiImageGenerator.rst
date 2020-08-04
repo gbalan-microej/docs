@@ -41,7 +41,7 @@ Process overview (see too :ref:`section_image_core_process`)
 The image generator can run in two modes: 
 
 * Standalone mode: the image to convert (input files) are standard (PNG, JPEG etc.), the generated binary files are in MicroEJ format and do not depend on platform characteristics or restrictions (see :ref:`section_image_standard_raw`).
-* Extended mode: the image to convert (input files) may be custom, the generated binary files can be encoded in customized MicroEJ format (can depend on several platform characteristics and restrictions, see :ref:`section_image_display_raw` and :ref:`section_image_custom_raw`) or the generated files are encoded in another format than MicroEJ format (binary format, see :ref:`section_image_binary_raw`).
+* Extended mode: the image to convert (input files) may be custom, the generated binary files can be encoded in customized MicroEJ format (can depend on several platform characteristics and restrictions, see :ref:`section_image_display_raw` and :ref:`section_image_gpu_raw`) or the generated files are encoded in another format than MicroEJ format (binary format, see :ref:`section_image_binary_raw`).
 
 Structure
 =========
@@ -183,7 +183,7 @@ Each line can add optional parameters (separated by a ':') which define and/or d
 
 * MicroEJ standard output format: to encode the image in a standard MicroEJ format, specify the MicroEJ format:
 
-   .. code-block:: txt
+   .. code-block::
       :caption: Standard Output Format Examples
 
       image1:ARGB8888
@@ -192,14 +192,14 @@ Each line can add optional parameters (separated by a ':') which define and/or d
 
 * MicroEJ "Display" output format: to encode the image in the same format than display (generic display or custom display, see :ref:`display_pixel_structure`), specify ``display`` as output format:
 
-   .. code-block:: txt
+   .. code-block::
       :caption: Display Output Format Example
 
       image1:display
 
 * MicroEJ "GPU" output format: this format declaration is identical to standard format. It is by construction a standard becomes a GPU compatible format.
 
-   .. code-block:: txt
+   .. code-block::
       :caption: GPU Output Format Examples
 
       image1:ARGB8888
@@ -208,21 +208,21 @@ Each line can add optional parameters (separated by a ':') which define and/or d
 
 * MicroEJ RLE1 output format: to encode the image in RLE1 format, specify ``RLE1`` as output format:
 
-   .. code-block:: txt
+   .. code-block::
       :caption: RLE1 Output Format Example
 
       image1:RLE1
 
 * No Compression: to keep original file, do not specify any format:
 
-   .. code-block:: txt
+   .. code-block::
       :caption: Unchanged Image Example
 
       image1
 
 * Binary format: to encode the image in a format only known by the platform, refer to the platform documentation to know which format are available.
 
-   .. code-block:: txt
+   .. code-block::
       :caption: Binary Output Format Example
 
       image1:XXX

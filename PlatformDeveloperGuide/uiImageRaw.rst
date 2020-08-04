@@ -209,7 +209,7 @@ Disadvantages:
 
 * No compression: the image size in bytes is proportional to the number of pixels.
 
-.. _section_image_custom_raw:
+.. _section_image_gpu_raw:
 
 MicroEJ Format: GPU
 ===================
@@ -289,7 +289,9 @@ Advantages:
 Disadvantages:
 
 * This format cannot be used to target a MicroUI Image (unsupported format).
-         
+
+.. _section_image_asis:
+
 No Compression
 ==============
 

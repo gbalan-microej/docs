@@ -72,7 +72,7 @@ Process overview:
 
 1. The user specifies the pre-generated images to embed (see
    :ref:`section_image_generator`) and / or the images to embed as
-   regular resources (see :ref:`section_image_runtime`)
+   regular resources (see :ref:`image_runtime_decoder`)
 
 2. The files are embedded as resources with the MicroEJ Application. The
    files' data are linked into the FLASH memory.
@@ -80,7 +80,7 @@ Process overview:
 3. When the MicroEJ Application creates a MicroUI Image object, the
    Image Engine Core loads the image, calling the right sub Image Engine
    module (see :ref:`section_image_generator` and
-   :ref:`section_image_runtime`) to decode the specified image.
+   :ref:`image_runtime_decoder`) to decode the specified image.
 
 4. When the MicroEJ Application draws this MicroUI Image on the display
    (or on buffered image), the decoded image data is used, and no more
@@ -89,7 +89,7 @@ Process overview:
 5. When the MicroUI Image is no longer needed, it is garbage-collected
    by the platform; and the Image Engine Core asks the right sub Image
    Engine module (see :ref:`section_image_generator` and
-   :ref:`section_image_runtime`) to free the image working area.
+   :ref:`image_runtime_decoder`) to free the image working area.
 
 .. toctree::
     :maxdepth: 2

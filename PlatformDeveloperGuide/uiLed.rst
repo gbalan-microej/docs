@@ -23,8 +23,8 @@ Typically, when the LED is connected to a ``GPIO``, the ``intensity`` "0" means 
 
 The BSP should be able to return the state of an LED. If it is not able to do so (for example ``GPIO`` is not accessible in read mode), the returned value may be wrong. The MicroEJ Application may not be able to know the LEDs states.
 
-Implementation
-==============
+Low-Level API
+=============
 
 The LED engine provides low level APIs that allow the BSP to manage the LEDs. The BSP has to implement these LLAPI, making the link between the MicroUI library and the BSP LEDs drivers.
 

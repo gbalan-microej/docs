@@ -69,6 +69,8 @@ An image may be pre-processed (:ref:`section_image_generator`) and so already in
 * When application specifies another output format than MicroEJ format encoded in the image, Image Loader has to allocate a buffer in RAM. It will convert the image in the expected MicroEJ format.
 * When application is loading an image in MicroEJ format located in external memory, the Image Loader has to copy the image into RAM memory to be usable by Image Core.
 
+.. _image_runtime_decoder:
+
 Encoded Image
 =============
 
