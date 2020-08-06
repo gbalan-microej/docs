@@ -4,11 +4,9 @@
 Image Format
 ============
 
-The Image Engine makes the distinction between the `input formats` (how an image is encoded) and the `output formats` (how the image is used by the platform and/or the Image Core).The Image Engine manages several standard formats in input: PNG, JPEG, BMP etc. In addition, an input format may be custom (platform dependant, unsupported image format by default). It manages two formats in output: the MicroEJ format (known by the Image Core) and the binary format.
+The Image Engine makes the distinction between the `input formats` (how an image is encoded) and the `output formats` (how the image is used by the platform and/or the Image Renderer).The Image Engine manages several standard formats in input: PNG, JPEG, BMP etc. In addition, an input format may be custom (platform dependant, unsupported image format by default). It manages two formats in output: the MicroEJ format (known by the Image Renderer) and the binary format.
 
-Each Image engine module can manage one or several input formats. However the Image Core manages only the MicroEJ format. The binary output format is fully platform dependant and can be used to encode some images which are not usable by MicroUI standard API.
-
-The MicroEJ format is the only binary format known by the Image Core. It is constitued by a header and by the image pixels (in a specific order and with a specific encoding). Several encodings are available. An encoding can be standard or platform dependant (custom).
+Each Image engine module can manage one or several input formats. However the Image Renderer manages only the MicroEJ format (:ref:`section_image_standard_raw`, :ref:`section_image_display_raw` and :ref:`section_image_gpu_raw`). The binary output format (:ref:`section_image_binary_raw`)is fully platform dependant and can be used to encode some images which are not usable by MicroUI standard API.
 
 .. _section_image_standard_raw:
 
@@ -25,11 +23,18 @@ Advantages:
 
 Disadvantages:
 
-* No compression: the image size in bytes is proportional to the number of pixels, the transparency, and the number of bits-per-pixel.
+* No compression: the image size in bytes is proportional to the number of pixels, the transparency, and the number of bits-per-pixel. 
+
+This format requires a small header (around 20 bytes) to store the image size (width, height), format, flags (is_transparent etc.), row stride etc. The requires memory depends too on number of bits-per-pixels of MicroEJ format:
+
+::
+
+      required_memory = header + (image_width * image_height) * bpp / 8;
 
 The pixels array is stored after the MicroEJ image file header. A padding between the header and the pixels array is added to force to start the pixels array at a memory address aligned on number of bits-per-pixels.
 
-xxx image RAW: format + padding + pixels
+.. figure:: images/uiFormat01.*
+   :width: 50.0%
 
 The available standard encodings are part of this list: ``ARGB8888 | RGB888 | RGB565 | ARGB1555 | ARGB4444 | A8 | A4 | A2 | A1 | C4 | C2 | C1 | AC44 | AC22 | AC11``
 
@@ -197,7 +202,7 @@ MicroEJ Format: Display
 
 The display can hold a pixel encoding which is not standard (see :ref:`display_pixel_structure`). The MicroEJ format can be customized to encode the pixel in same encoding than display. The number of bits-per-pixels and the pixel bits organisation is asked during the MicroEJ format generation and when the ``drawImage`` algorithms are running. If the image to encode contains some transparent pixels, the output file will embed the transparency according to the display’s implementation capacity. When all pixels are fully opaque, no extra information will be stored in the output file in order to free up some memory space.
 
-.. note:: From Image Engine point of view, the format stays a MicroEJ format, readable by the Image Core.
+.. note:: From Image Engine point of view, the format stays a MicroEJ format, readable by the Image Renderer.
 
 Advantages:
 
@@ -207,7 +212,7 @@ Advantages:
 
 Disadvantages:
 
-* No compression: the image size in bytes is proportional to the number of pixels.
+* No compression: the image size in bytes is proportional to the number of pixels. The required memory is similar to :ref:`section_image_standard_raw`.
 
 .. _section_image_gpu_raw:
 
@@ -220,7 +225,7 @@ The MicroEJ format may be customized to be platform's GPU compatible. It can be 
 * A padding has to be added after each line (row stride).
 * The MicroEJ format can hold a platform dependant header, located between MicroEJ format header (start of file) and pixels array. The MicroEJ format is designed to let the platform encodes and decodes this additional header. For Image Engine software algorithms, this header is useless and never used. 
 
-.. note:: From Image Engine point of view, the format stays a MicroEJ format, readable by the Image Engine Core.
+.. note:: From Image Engine point of view, the format stays a MicroEJ format, readable by the Image Engine Renderer.
 
 Advantages:
 
@@ -230,16 +235,22 @@ Advantages:
 
 Disadvantages:
 
-* No compression: the image size in bytes is proportional to the number of pixels.
+* No compression: the image size in bytes is proportional to the number of pixels. The required memory is similar to :ref:`section_image_standard_raw` when there is no custom header. 
 
-xxx image raw: header + padding + customheader + pixels + line padding
+When MicroEJ format holds another header (called ``custom_header``), the required memory depends is:
 
-.. note:: When a row stride is specified, the pixel offset rule becomes:
+::
 
-   ::
+      required_memory = header + custom_header + (image_width * image_height) * bpp / 8;
 
-         pixel_offset = (pixel_Y * stride + pixel_X) * bpp / 8;
+The row stride allows to add some padding at the end of each line in order to start next line at an address with a specific memory alignment; it is often required by hardware accelerators (GPU). The row stride is by default a value in relation with the image width: ``row_stride_in_bytes = image_width * bpp / 8``. It can be customized at image buffer creation thanks the low level API ``LLUI_DISPLAY_IMPL_getNewImageStrideInBytes``.  The required RAM memory becomes:
 
+::
+
+      required_memory = header + custom_header + row_stride * image_height;
+
+.. figure:: images/uiFormat02.*
+   :width: 50.0%
 
 MicroEJ Format: RLE1
 ====================
@@ -274,12 +285,14 @@ Disadvantages:
 
 * Drawing an image is slightly slower than when using Display format.
 
+The file format is quite similar to :ref:`section_image_standard_raw`.
+
 .. _section_image_binary_raw:
 
 Binary Format
 =============
 
-This format is not compatible with the Image Core and by MicroUI. It is can be used by MicroUI addon libraries which provide their own images managements. 
+This format is not compatible with the Image Renderer and by MicroUI. It is can be used by MicroUI addon libraries which provide their own images managements. 
 
 Advantages:
 

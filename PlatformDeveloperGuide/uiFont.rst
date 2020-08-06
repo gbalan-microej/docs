@@ -1,20 +1,15 @@
-=======================
-Graphics User Interface
-=======================
+.. _section_fonts:
+
+Fonts
+=====
 
 .. toctree::
     :maxdepth: 2
 
-    uiIntroduction
-    uiMicroui
-    uiStaticInit
-    uiLowLevel
-    uiLed
-    uiInput
-    uiDisplay
-    uiImage
-    uiFont
-    uiSimulation
+    uiFontOverview
+    uiFontFormat
+    uiFontGenerator
+    uiFontCore
 
 ..
    | Copyright 2008-2020, MicroEJ Corp. Content in this space is free 

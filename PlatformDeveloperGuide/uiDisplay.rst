@@ -18,7 +18,7 @@ The Display engine contains the C part of the MicroUI implementation which manag
 Functional Description
 ======================
 
-The Display engine (or graphical engine) implements the MicroUI graphics framework. This framework is constitued of several notions: the display characteristics (size, format, backlight, contrast etc.), the drawing state machine (render, flush, wait flush completed), the images cycle life, the font and drawings. The main part of graphical engine is provided by a built-in C archive. This library manages the drawing state machine mechanism, the images and fonts. The display characteristics and the drawings are managed by the LLUI_DISPLAY implementation.
+The Display engine (or graphical engine) implements the MicroUI graphics framework. This framework is constitued of several notions: the display characteristics (size, format, backlight, contrast etc.), the drawing state machine (render, flush, wait flush completed), the images cycle life, the font and drawings. The main part of graphical engine is provided by a built-in C archive. This library manages the drawing state machine mechanism, the images and fonts. The display characteristics and the drawings are managed by the ``LLUI_DISPLAY`` implementation.   
 
 Graphical engine is designed to let the BSP use an optional graphics processor unit (GPU) or an optional third-party drawing library. Each drawing can be implemented independantly; no have to implement all MicroUI drawings. If no extra framework is available, the graphical engine performs all drawings in software. In this case the graphical engine low-level implementation the BSP has to perform is very simple (four functions). 
 
@@ -572,7 +572,7 @@ Display Synchronization
 Overview
 --------
 
-Graphical engine defines some points in the rendering timeline. This chapter explains why to use LCD tearing signal and its consequences. Some chronograms describe several use cases: with and without LCD tearing signal, long drawings, long flush time etc. Times are in milliseconds. To simplify chronograms views, the LCD refresh rate is every 16ms (62.5Hz). 
+Graphical engine is designed to be synchronized with the LCD refresh rate by defining some points in the rendering timeline. It is optional; however it is mainly recommanded.  This chapter explains why to use LCD tearing signal and its consequences. Some chronograms describe several use cases: with and without LCD tearing signal, long drawings, long flush time etc. Times are in milliseconds. To simplify chronograms views, the LCD refresh rate is every 16ms (62.5Hz). 
 
 Captions definition:
 
@@ -624,6 +624,11 @@ The previous example doesn't take in consideration the LCD tearing signal. Howev
 .. figure:: images/uiDisplaySync07.*
    :width: 100%
 
+GPU Synchronization
+===================
+
+When a GPU is used to perform a drawing, the caller (MicroUI painter native method) returns immediately. This allows to the MicroEJ application to perform other operations during the GPU rendering. However, as soon as the MicroEJ application is trying to perform another drawing, the previous drawing made by the GPU must be done. Graphical engine is designed to be synchronized with the GPU asynchronous drawings by defining some points in the rendering timeline. It is not optional: MicroUI considers a drawing is fully done when it starts a new one. The end of GPU drawing must notify the graphical engine calling ``LLUI_DISPLAY_drawingDone()``.
+
 Antialiasing
 ============
 
@@ -663,56 +668,76 @@ This solution requires several conditions:
 -  Application can only use blending ranges provided by the LUT. Otherwise the display driver is not able to find the range and the default color will be used to perform the blending.
 -  Rendering of dynamic images (images decoded at runtime) may be wrong because the ARGB colors may be out of LUT range.
 
-..
 
-   Image Pixel Conversion
-   ======================
+Image Pixel Conversion
+======================
 
-      Overview
-      --------
+Overview
+--------
 
-      Display engine is built for a dedicated LCD pixel format (see :ref:`display_pixel_structure`). For this pixel format, the display engine must be able to perform some shape drawings with or without alpha blending and to draw images with or without alpha blending. In addition, it must be able to read all images formats.
+Display engine is built for a dedicated LCD pixel format (see :ref:`display_pixel_structure`). For this pixel format, the display engine must be able to draw image with or without alpha blending and with or without transformation. In addition, it must be able to read all images formats.
 
-      The MicroEJ application may not use all MicroUI shape drawings options and may not use all images formats. It is not possible to detect what the application is needed, so no optimization can be performed at application compiletime. However, for a given application, the platform can be built with a reduced set of pixel support. 
+The MicroEJ application may not use all MicroUI image drawings options and may not use all images formats. It is not possible to detect what the application is needed, so no optimization can be performed at application compiletime. However, for a given application, the platform can be built with a reduced set of pixel support. 
 
-      All pixel format manipulations (read, write, copy) are using dedicated functions. It is possible to remove some functions or to use generic functions. The advantage is to reduce the memory footprint. The inconvenient is that some features are removed (the application should not use them) or some features are slower (generic functions are slower than dedicated functions).
+All pixel format manipulations (read, write, copy) are using dedicated functions. It is possible to remove some functions or to use generic functions. The advantage is to reduce the memory footprint. The inconvenient is that some features are removed (the application should not use them) or some features are slower (generic functions are slower than dedicated functions).
 
-      Memory
-      ------
+Functions
+---------
 
-      There are five pixel *conversion* modes:
+There are five pixel *conversion* modes:
 
-      -  draw an image without global alpha blending: copy a pixel from a format to the destination format (LCD format)
-      -  draw an image with global alpha blending: copy a pixel with alpha blending from a format to the destination format (LCD format)
-      -  draw a shape: draw a pixel in destination format (LCD format)
-      -  load a ``ResourceImage`` with an output format: convert a pixel in ARGB8888 format to the output format
-      -  read a pixel from an image (rotate, scale, flip): read any pixel formats 
+-  draw an image without transformation and without global alpha blending: copy a pixel from a format to the destination format (LCD format)
+-  draw an image without transformation and with global alpha blending: copy a pixel with alpha blending from a format to the destination format (LCD format)
+-  draw an image with transformation and with or without alpha blending: draw an ARGB8888 pixel in destination format (LCD format)
+-  load a ``ResourceImage`` with an output format: convert an ARGB8888 pixel to the output format
+-  read a pixel from an image (``Image.readPixel()`` or to draw an image with transformation or to convert an image): read any pixel formats and convert it in ARGB8888
 
-      .. table:: Pixel Conversion
+.. table:: Pixel Conversion
 
-         +------------------------------------------+-------------+-------------+-------------+-------------+
-         |                                          | Nb input    | Nb output   | Number of   | Function    |
-         |                                          | formats     | formats     | combinations| size (byte) |
-         +==========================================+=============+=============+=============+=============+
-         | Draw image without global alpha          |     22      |      1      |     22      |     xxx     |
-         +------------------------------------------+-------------+-------------+-------------+-------------+
-         | Draw image with global alpha             |     22      |      1      |     22      |     xxx     |
-         +------------------------------------------+-------------+-------------+-------------+-------------+
-         | Draw a shape                             |      2      |      1      |      2      |     xxx     |
-         +------------------------------------------+-------------+-------------+-------------+-------------+
-         | Load a  ``ResourceImage``                |      1      |      6      |      6      |     xxx     |
-         +------------------------------------------+-------------+-------------+-------------+-------------+
-         | Read an image                            |     22      |      1      |     22      |     xxx     |
-         +------------------------------------------+-------------+-------------+-------------+-------------+
+   +------------------------------------------+-------------+-------------+-------------+
+   |                                          | Nb input    | Nb output   | Number of   |
+   |                                          | formats     | formats     | combinations|
+   +==========================================+=============+=============+=============+
+   | Draw image without global alpha          |     22      |      1      |     22      |
+   +------------------------------------------+-------------+-------------+-------------+
+   | Draw image with global alpha             |     22      |      1      |     22      |
+   +------------------------------------------+-------------+-------------+-------------+
+   | Draw image with transformation           |      2      |      1      |      2      |
+   +------------------------------------------+-------------+-------------+-------------+
+   | Load a  ``ResourceImage``                |      1      |      6      |      6      |
+   +------------------------------------------+-------------+-------------+-------------+
+   | Read an image                            |     22      |      1      |     22      |
+   +------------------------------------------+-------------+-------------+-------------+
 
-      Linker File
-      -----------
+There are ``22x1 + 22x1 + 2x1 + 1x6 + 22x1 = 74`` functions. Each function takes between 50 and 200 bytes according the complexity and the C compiler. 
 
-      All pixel functions are listed in a platform linker file. It is possible to edit this file to remove some features or to share some functions (using generic function).
+Linker File
+-----------
 
-      How to get the file:
+All pixel functions are listed in a platform linker file. It is possible to edit this file to remove some features or to share some functions (using generic function).
 
-      #. xxx
+How to get the file:
+
+#. Build platform as usual.
+#. Copy platform file ``[platform]/source/link/display_image_x.lscf`` in platform configuration project: ``[platform configuration project]/dropins/link/``. ``x`` is a number which characterizes the display pixel format (see :ref:`display_pixel_structure`). See next warning.
+#. Perform some changes into the copied file (see after).
+#. Rebuild the platform: the `dropins` file is copied in the platform instead of the original one.
+
+.. warning:: When the display format in ``[platform configuration project]/display/display.properties`` changes, the linker file suffix changes too. Perform again all operations in new file with new suffix.
+
+The linker files holds five tables, one for each use case, respectively ``IMAGE_UTILS_TABLE_COPY``, ``IMAGE_UTILS_TABLE_COPY_WITH_ALPHA``, ``IMAGE_UTILS_TABLE_DRAW``, ``IMAGE_UTILS_TABLE_SET`` and ``IMAGE_UTILS_TABLE_READ``. For each table, a comment describe how to remove an option (when possible) or how to replace an option by a generic function (if available). 
+
+Library ej.apiDrawing
+=====================
+
+This library is a foundation library which provides additional drawings API. MicroUI's drawing APIs are `aliased` oriented whereas Drawing's drawing APIs are `anti-aliased` oriented. This library is fully integrated in graphical engine. It requires an implementation of its low-level API: ``LLDW_PAINTER_impl.h``. These functions are implemented in the same CCO than ``LLUI_PAINTER_impl.h``: ``com.microej.clibrary.llimpl#microui-drawings``. Like MicroUI painter's natives, the functions are redirected to ``dw_drawing.h``. A default implementation of these functions are available in Software Algorithms module (in weak). This allows to the BSP to override one or several APIs.
+
+Dependencies
+============
+
+-  MicroUI initialization step (see :ref:`section_static_init`).
+
+-  MicroUI C libraries (see :ref:`section_architecture`).
 
 
 

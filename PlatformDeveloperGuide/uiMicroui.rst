@@ -149,14 +149,6 @@ is defined during the pre-generation of a font (see
 -  ``8`` means 256 levels are managed: fully opaque, fully transparent
    and 254 intermediate levels.
 
-Dependencies
-============
-
--  MicroUI initialization step (see :ref:`section_static_init`).
-
--  MicroUI C libraries (see :ref:`section_architecture`).
-
-
 .. _section_microui_installation:
 
 Installation

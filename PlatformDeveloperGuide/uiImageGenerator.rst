@@ -9,7 +9,7 @@ Principle
 
 The Image Generator module is an off-board tool that generates image data that is ready to be displayed without needing additional runtime memory. The two main advantages of this module are:
 
-* A pre-generated image is already encoded in the format known by the Image Core (MicroEJ format) or by the platform (custom binary format). The time to create an image is very fast and does not require any RAM (Image Loader is not used).
+* A pre-generated image is already encoded in the format known by the Image Renderer (MicroEJ format) or by the platform (custom binary format). The time to create an image is very fast and does not require any RAM (Image Loader is not used).
 * No extra support is needed (no runtime Image Decoder).
 
 Functional Description
@@ -53,16 +53,10 @@ The Image Generator module is constitued in several parts: the core part and ser
 * "Standard input format loader" part: this service loads standard image files (PNG, JPEG etc.).
 * "MicroEJ format generator" part: this service encodes an image in MicroEJ format.
 
-xxx schema core/api/service loader png / service loader x n / service microej / service binary x n
-
 Standalone Mode
 ===============
 
 The standalone Image Generator embeds all parts described above. By consequence, once installed in a platform, the standalone image generator does not need any extended module to generate MicroEJ files from standard images files. 
-
-xxx schema core/api/service loader png / service microej 
-
-xxxx list des fichiers supportés en input (PNG etc.)
 
 Extended Mode
 =============
@@ -135,7 +129,7 @@ The standalone Image Generator is not able to load all images formats, for insta
 Custom MicroEJ Format
 =====================
 
-As mentionned upper (:ref:`section_image_display_raw` and :ref:`section_image_gpu_raw`), the MicroEJ format can be enriched by notions specific to the platform (and often to the GPU the platform is using). The generated file stays a MicroEJ file format, usable by the Image Core. Additionally, the file becomes compatible with the platform constraints. 
+As mentionned upper (:ref:`section_image_display_raw` and :ref:`section_image_gpu_raw`), the MicroEJ format can be enriched by notions specific to the platform (and often to the GPU the platform is using). The generated file stays a MicroEJ file format, usable by the Image Renderer. Additionally, the file becomes compatible with the platform constraints. 
 
 1. Open image generator extension project.
 2. Create a subclass of ``com.microej.tool.ui.generator.BufferedImageLoader`` (to be able to load standard images) or create an implementation of interface ``com.microej.tool.ui.generator.MicroUIRawImageGeneratorExtension`` (to load custom images).
@@ -157,7 +151,7 @@ This alignment will be used by the Image Generator and also by the Image Loader.
 Platform Binary Format
 ======================
 
-As mentionned upper (:ref:`section_image_binary_raw`), the Image Generator is able to generate a binary file compatible with platform (and not compatible with Image Core). This is very useful when a platform library offers the possibility to use other kinds of images than MicroUI library. The binary file can be encoded according options the user gives in the images list file.
+As mentionned upper (:ref:`section_image_binary_raw`), the Image Generator is able to generate a binary file compatible with platform (and not compatible with Image Renderer). This is very useful when a platform library offers the possibility to use other kinds of images than MicroUI library. The binary file can be encoded according options the user gives in the images list file.
 
 1. Open image generator extension project.
 2. Create an implementation of the interface ``com.microej.tool.ui.generator.ImageConverter``.
@@ -236,10 +230,6 @@ In addition with images binary files, the Image Generator module generates a lin
 * The section is aligned on the value specified by the display module property ``imageBuffer.memoryAlignment`` (32 bits by default).
 * Each file is aligned on section alignment value.
 
-
-
-xxx loader
-
 External Resources
 ==================
 
@@ -255,7 +245,7 @@ external memory.
 Dependencies
 ============
 
--  Image Engine Core module (see :ref:`section_image_core`).
+-  Image Renderer module (see :ref:`section_image_core`).
 
 -  Display module (see :ref:`section_display`): This module gives
    the characteristics of the graphical display that are useful in
