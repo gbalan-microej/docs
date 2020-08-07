@@ -18,6 +18,8 @@ Second kind of image requires the Image Engine must be able to use (load, read a
 
 Third kind of image requires, by definition, a buffer to store the image pixels. Image Engine must be able to use (create, read and draw) this kind of image. The *open* state consists to create a buffer. By consequence a *closing* step is required to free the buffer when image becomes useless. Contrary to the other kinds of images, the application will be able to draw into this image.
 
+.. _section_image_core_process:
+
 Functional Description
 ======================
 
@@ -27,9 +29,6 @@ The Image Engine is composed of:
 * The "Image Loader" module, for loading, converting and closing the images. 
 * A set of "Image Decoder" modules, for converting standard image formats into a MicroEJ format (known by the Image Core) at runtime. Each Image Decoder is an additional module of the main module "Image Loader".
 * The "Image Renderer" module, for reading and drawing the images in MicroEJ format.
-
-
-.. _section_image_core_process:
 
 .. graphviz::
 
@@ -54,7 +53,7 @@ The Image Engine is composed of:
          node [shape=rect color="gray" style="filled" ffixedsize=true width=3]
          bsp
       }
-      e
+      
       {
          input [label="Input Files (png, xxx)"]
          generator [label="Image Generator"]

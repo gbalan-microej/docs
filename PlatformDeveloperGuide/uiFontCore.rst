@@ -35,6 +35,8 @@ The engine redirects all MicroUI font drawings to the internal software algorith
       app -> stack -> algo -> hard
    }
 
+.. _section_font_loader_memory:
+
 External Resources
 ==================
 

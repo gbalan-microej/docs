@@ -30,7 +30,9 @@ Functional Description
 Memory
 ======
 
-There are several ways to create a MicroUI Image. Except few specific cases, the Image Loader requires some RAM memory to store the image content in MicroEJ format. This format requires a small header as explained here: :ref:`section_image_standard_raw`.  It can be GPU compatible as explained here: :ref:`section_image_gpu_raw`.
+There are several ways to create a MicroUI Image. Except few specific cases, the Image Loader requires some RAM memory to store the image content in MicroEJ format. This format requires a small header as explained here: :ref:`section_image_standard_raw`.  It can be GPU compatible as explained here: :ref:`section_image_gpu_raw`. 
+
+The heap size is application dependant. In MicroEJ application launcher, set its size in ``Libraries > MicroUI > Images heap size (in bytes)``. It will declare a section whose name is ``.bss.microui.display.imagesHeap``.
 
 BufferedImage
 =============
